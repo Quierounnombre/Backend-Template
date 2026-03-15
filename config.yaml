@@ -1,0 +1,53 @@
+# EXAMPLE OF A CONFIG
+
+port: 8080
+release_mode: "debug"
+frontend: "http://localhost:3000"
+
+db:
+  max_cons: 4
+  min_cons: 1
+  min_idle_cons: 1
+  health_check_period: "1m"
+  max_con_lifetime: "5m"
+  max_con_lifetime_jitter: "1m"
+  max_con_idle_time: "3m"
+  ctx_timeout: "15s"
+
+cors:
+  allow_all_origins: false
+  allow_private_network: false
+  allow_credentials: true
+  allow_wildcard: false
+  allow_browser_extensions: false
+  allow_websockets: false
+  allow_files: false
+  allow_origins:
+    - "http://localhost:3000"
+  allow_methods:
+    - "GET"
+    - "POST"
+  allow_headers:
+    - "Authorization"
+    - "Content-Type"
+  max_age: "12h"
+  options_response_status: 204
+
+jwt:
+  realm: "Backend API"
+  timeout: "15m"
+  max_refresh: "8h"
+  token_lookup: "header: Authorization, query: token, cookie: jwt"
+  token_head_name: "Bearer"
+  send_cookie: true
+  secure_cookie: true
+  cookie_same_site: 4  # 1=Default 2=Lax 3=Strict 4=None
+  cookie_http_only: true
+  cookie_max_age: "15m"
+  cookie_domain: ""
+  send_authorization: true
+
+oauth:
+  provider: "https://accounts.google.com/o/oauth2/auth"
+  token_provider: "https://oauth2.googleapis.com/token"
+  redirect_uri: "http://localhost:8080/auth/callback"
