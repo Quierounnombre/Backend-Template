@@ -4,6 +4,8 @@ A generic template for creating a stable, secure and performant backend in mere 
 
 It uses a yaml for non critical data, and a .env for critical data(KEEP THIS OUT OF THE PROD REPO)
 
+path: config.yaml
+
 1. OAuth support with Google
 2. Pgxpool configured
 3. User creation configured

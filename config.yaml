@@ -2,8 +2,7 @@
 
 #This needs to be a string stating with :
 port: ":8080"
-release_mode: "debug"
-frontend: "http://localhost:3000"
+release_mode: "https://backend-template-production.up.railway.app"
 
 db:
   max_cons: 4
@@ -24,7 +23,7 @@ cors:
   allow_websockets: false
   allow_files: false
   allow_origins:
-    - "http://localhost:3000"
+    - "https://backend-template-production.up.railway.app"
   allow_methods:
     - "GET"
     - "POST"
