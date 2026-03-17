@@ -51,4 +51,4 @@ jwt:
 oauth:
   provider: "https://accounts.google.com/o/oauth2/auth"
   token_provider: "https://oauth2.googleapis.com/token"
-  redirect_uri: "https://backend-template-production.up.railway.app/auth/callback"
+  redirect_uri: "https://backend-template-production.up.railway.app/OAuthCallback"
