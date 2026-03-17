@@ -1,6 +1,7 @@
 # EXAMPLE OF A CONFIG
 
-port: 8080
+#This needs to be a string stating with :
+port: ":8080"
 release_mode: "debug"
 frontend: "http://localhost:3000"
 
@@ -50,4 +51,4 @@ jwt:
 oauth:
   provider: "https://accounts.google.com/o/oauth2/auth"
   token_provider: "https://oauth2.googleapis.com/token"
-  redirect_uri: "http://localhost:8080/auth/callback"
+  redirect_uri: "http://backend-template-production.up.railway.app/auth/callback"
