@@ -8,6 +8,7 @@ import (
 	"github.com/appleboy/gin-jwt/v3/core"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func init_jwt_params(s *Settings) *g_jwt.GinJWTMiddleware {
@@ -47,7 +48,7 @@ func payload_func() func(data any) jwt.MapClaims {
 		}
 		return jwt.MapClaims{
 			D_JWT_identity_key: value.Email,
-			D_User_ID: value.UserID
+			D_User_ID: value.UserID.String(),
 		}
 	}
 }
@@ -55,9 +56,10 @@ func payload_func() func(data any) jwt.MapClaims {
 func identity_handler() func(c *gin.Context) any {
 	return func(c *gin.Context) any {
 		claims := g_jwt.ExtractClaims(c)
+		id, _ := uuid.Parse(claims[D_User_ID].(string))
 		return &User{
 			Email: claims[D_JWT_identity_key].(string),
-			UserID: claims[D_User_ID].(string),
+			UserID: id,
 		}
 	}
 }
