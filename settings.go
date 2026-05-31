@@ -24,9 +24,9 @@ func load_settings_from_env(s *Settings) {
 	}
 	s.Session_key = parse_string_env("SESSION_KEY")
 	s.Jwt_priv_key = parse_string_env("JWT_PRIV_KEY")
-	strings.ReplaceAll(s.Jwt_priv_key, `\n`, "\n")
+	s.Jwt_priv_key = strings.ReplaceAll(s.Jwt_priv_key, `\n`, "\n")
 	s.Jwt_pub_key = parse_string_env("JWT_PUB_KEY")
-	strings.ReplaceAll(s.Jwt_pub_key, `\n`, "\n")
+	s.Jwt_pub_key = strings.ReplaceAll(s.Jwt_pub_key, `\n`, "\n")
 	s.DB_url = parse_string_env("DATABASE_URL")
 	s.Client_id = parse_string_env("CLIENT_ID")
 	s.Client_secret = parse_string_env("CLIENT_SECRET")
