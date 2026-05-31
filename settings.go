@@ -1,13 +1,15 @@
 package main
 
 import (
-	"os"
 	"log"
+	"os"
+	"strings"
+
+	g_jwt "github.com/appleboy/gin-jwt/v3"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
-	g_jwt "github.com/appleboy/gin-jwt/v3"
+	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-yaml"
 )
 
@@ -21,7 +23,10 @@ func load_settings_from_env(s *Settings) {
 		log.Fatalf("config: %s", err.Error())
 	}
 	s.Session_key = parse_string_env("SESSION_KEY")
-	s.Jwt_key = parse_string_env("JWT_KEY")
+	s.Jwt_priv_key = parse_string_env("JWT_PRIV_KEY")
+	strings.ReplaceAll(s.Jwt_priv_key, `\n`, "\n")
+	s.Jwt_pub_key = parse_string_env("JWT_PUB_KEY")
+	strings.ReplaceAll(s.Jwt_pub_key, `\n`, "\n")
 	s.DB_url = parse_string_env("DATABASE_URL")
 	s.Client_id = parse_string_env("CLIENT_ID")
 	s.Client_secret = parse_string_env("CLIENT_SECRET")
@@ -61,6 +66,7 @@ func Set_endpoints(
 	eng.GET("/OAuthLogin", OAuthLogin(s))
 	eng.GET("/OAuthCallback", OAuthCallback(s, db, handle))
 	eng.POST("/auth/refresh", handle.RefreshHandler)
+	eng.GET("/auth/public-key", Expose_pub_key(s))
 	eng.NoRoute(handle.MiddlewareFunc(), handleNoRoute())
 	auth := eng.Group("/user/", handle.MiddlewareFunc())
 	{

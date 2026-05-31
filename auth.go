@@ -192,3 +192,9 @@ func handleOAuthSuccess(
 	}
 	return nil
 }
+
+func Expose_pub_key(s *Settings) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(200, gin.H{"pub_key": s.Jwt_pub_key})
+	}
+}

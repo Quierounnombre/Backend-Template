@@ -85,7 +85,8 @@ type Settings struct {
 	// injected from .env
 
 	Session_key			string
-	Jwt_key				string
+	Jwt_priv_key		string
+	Jwt_pub_key			string
 	DB_url				string
 	Client_id			string
 	Client_secret		string

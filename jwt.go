@@ -13,7 +13,9 @@ import (
 func init_jwt_params(s *Settings) *g_jwt.GinJWTMiddleware {
 	return &g_jwt.GinJWTMiddleware{
 		Realm:				s.Jwt.Realm,
-		Key:				[]byte(s.Jwt_key),
+		PrivKeyBytes:		[]byte(s.Jwt_priv_key),
+		PubKeyBytes:		[]byte(s.Jwt_pub_key),
+		SigningAlgorithm:	"RS256",
 		Timeout:			s.Jwt.Timeout,
 		MaxRefresh:			s.Jwt.MaxRefresh,
 		IdentityKey:		D_JWT_identity_key,
@@ -45,19 +47,21 @@ func payload_func() func(data any) jwt.MapClaims {
 		}
 		return jwt.MapClaims{
 			D_JWT_identity_key: value.Email,
+			D_User_ID: value.UserID
 		}
 	}
 }
- 
+
 func identity_handler() func(c *gin.Context) any {
 	return func(c *gin.Context) any {
 		claims := g_jwt.ExtractClaims(c)
 		return &User{
 			Email: claims[D_JWT_identity_key].(string),
+			UserID: claims[D_User_ID].(string),
 		}
 	}
 }
- 
+
 func login_response(s *Settings) func(c *gin.Context, token *core.Token) {
 	return func(c *gin.Context, token *core.Token) {
 		_, is_OAuth := c.Get("oauth_provider")
@@ -75,20 +79,20 @@ func login_response(s *Settings) func(c *gin.Context, token *core.Token) {
 		})
 	}
 }
- 
+
 func authenticator() func(c *gin.Context) (any, error) {
 	return func(c *gin.Context) (any, error) {
 		return nil, g_jwt.ErrMissingLoginValues
 	}
 }
- 
+
 func authorizer() func(c *gin.Context, data any) bool {
 	return func(c *gin.Context, data any) bool {
 		_, ok := data.(*User)
 		return ok
 	}
 }
- 
+
 func unauthorized() func(c *gin.Context, code int, message string) {
 	return func(c *gin.Context, code int, message string) {
 		c.JSON(code, gin.H{
@@ -97,13 +101,13 @@ func unauthorized() func(c *gin.Context, code int, message string) {
 		})
 	}
 }
- 
+
 func logout_response() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{})
 	}
 }
- 
+
 func handleNoRoute() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
