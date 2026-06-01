@@ -52,3 +52,7 @@ oauth:
   provider: "https://accounts.google.com/o/oauth2/auth"
   token_provider: "https://oauth2.googleapis.com/token"
   redirect_uri: "https://backend-template-production.up.railway.app/OAuthCallback"
+
+rate:
+  max_request: 1
+  reset_interval: 5m

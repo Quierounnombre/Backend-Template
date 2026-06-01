@@ -88,14 +88,26 @@ func Set_JWT(s *Settings) *g_jwt.GinJWTMiddleware {
 	return Middleware
 }
 
+func Set_RateLimiter(s *Settings) *RateLimiter {
+	rl := RateLimiter {
+		reqs: make(map[string]uint),
+		Max_reqs: s.Limiter.Max_request,
+		Reset_time: s.Limiter.Reset_time,
+	}
+	go rl.Cleanup()
+	return (&rl)
+}
+
 func Set_gin(s *Settings, db *Db_data) *gin.Engine {
 	Middleware := Set_JWT(s)
 	store := cookie.NewStore([]byte(s.Session_key))
 	config := Set_cors_config(s)
+	rl :=  Set_RateLimiter(s)
 	eng := gin.New()
 	eng.Use(gin.Recovery())
 	eng.Use(gin.Logger())
 	eng.Use(cors.New(config))
+	eng.Use(rl.Middleware())
 	eng.Use(sessions.Sessions("state_session", store))
 	Set_endpoints(s, eng, db, Middleware)
 	return eng

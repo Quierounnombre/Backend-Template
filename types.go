@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/google/uuid"
 	"context"
+	"sync"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 //----------------------------------------------------------------------------------------------SETTINGS
@@ -81,6 +83,7 @@ type Settings struct {
 	Cors				Cors_settings		`yaml:"cors"`
 	Jwt					Jwt_settings		`yaml:"jwt"`
 	OAuth				OAuth_settings		`yaml:"oauth"`
+	Limiter				Rate_limits			`yaml:"rate"`
 
 	// injected from .env
 
@@ -105,4 +108,18 @@ type User struct {
 	Email			string		`json:"email"`
 	UserID			uuid.UUID	`json:"id"`
 	Picture			string		`json:"picture"`
+}
+
+//------------------------------------------------------------------------------------------------------LIMITER
+
+type RateLimiter struct {
+	mu			sync.Mutex
+	reqs		map[string]uint
+	Max_reqs	uint
+	Reset_time	time.Duration
+}
+
+type Rate_limits struct {
+	Max_request		uint			`yaml:"max_request"`
+	Reset_time		time.Duration	`yaml:"reset_interval"`
 }
