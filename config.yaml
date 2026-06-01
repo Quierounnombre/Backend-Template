@@ -54,5 +54,5 @@ oauth:
   redirect_uri: "https://backend-template-production.up.railway.app/OAuthCallback"
 
 rate:
-  max_request: 1
+  max_request: 5
   reset_interval: 5m
