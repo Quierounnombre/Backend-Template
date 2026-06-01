@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -11,7 +12,7 @@ func (rl *RateLimiter)Allow(client string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	rl.reqs[client]++
-	if rl.reqs[client] >= rl.Max_reqs {
+	if rl.reqs[client] > rl.Max_reqs {
 		return false
 	}
 	return true
@@ -34,5 +35,6 @@ func (rl *RateLimiter)Cleanup() {
 		rl.mu.Lock()
 		rl.reqs = make(map[string]uint)
 		rl.mu.Unlock()
+		log.Panicln("rate limit: reset")
 	}
 }
