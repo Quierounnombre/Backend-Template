@@ -110,6 +110,11 @@ type User struct {
 	Picture			string		`json:"picture"`
 }
 
+type LoginRequest struct {
+	Email			string		`json:"email"`
+	Password		string		`json:"password"`
+}
+
 //------------------------------------------------------------------------------------------------------LIMITER
 
 type RateLimiter struct {

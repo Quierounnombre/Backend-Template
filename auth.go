@@ -198,3 +198,50 @@ func Expose_pub_key(s *Settings) gin.HandlerFunc {
 		c.JSON(200, gin.H{"pub_key": s.Jwt_pub_key})
 	}
 }
+
+func Pass_Auth(
+	db				*Db_data,
+	authMiddleware	*g_jwt.GinJWTMiddleware,
+) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req		LoginRequest
+		var err		error
+		var match	bool
+		var token	*core.Token
+		var user	*User
+
+		err = c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			return
+		}
+		if req.Email == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
+			return
+		}
+		match, user, err = CheckUserPassword(db, req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if match == false {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password don't match"})
+			return
+		}
+		user, err = GetUser(db, req.Email)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.Set(authMiddleware.IdentityKey, user)
+		token, err = authMiddleware.TokenGenerator(c.Request.Context(), user)
+		if err != nil {
+			return err
+		}
+		authMiddleware.SetCookie(c, token.AccessToken)
+		authMiddleware.SetRefreshTokenCookie(c, token.RefreshToken)
+		if authMiddleware.LoginResponse != nil {
+			authMiddleware.LoginResponse(c, token)
+		}
+	}
+}

@@ -70,6 +70,24 @@ func GetUser(db *Db_data, email string) (*User, error) {
 	return user, err
 }
 
+func CheckUserPassword(db *Db_data, req LoginRequest) (bool, *User, error) {
+	var match		bool
+	var err			error
+	var sql			string
+	var ctx			context.Context
+	var cancel		context.CancelFunc
+	var row			pgx.Row
+
+	sql = `
+	SELECT password_hash = crypt(1$, password_hash) FROM users WHERE email=2$
+	`
+	ctx, cancel = db.ctx()
+	defer cancel()
+	row = db.pool.QueryRow(ctx, sql, req.Password, req.Email)
+	err = row.Scan(&match)
+	return match, err
+}
+
 func Login_or_ADD_User(db *Db_data, storage_data *User) (*User, error) {
 	var tmp_email	string
 	var sql			string
