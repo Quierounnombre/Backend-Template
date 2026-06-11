@@ -115,6 +115,12 @@ type LoginRequest struct {
 	Password		string		`json:"password"`
 }
 
+type SignUpRequest struct {
+	Email		string		`json:"email"`
+	Password	string		`json:"password"`
+	Name		string		`json:"name"`
+}
+
 //------------------------------------------------------------------------------------------------------LIMITER
 
 type RateLimiter struct {

@@ -65,6 +65,8 @@ func Set_endpoints(
 ) {
 	eng.GET("/OAuthLogin", OAuthLogin(s))
 	eng.GET("/OAuthCallback", OAuthCallback(s, db, handle))
+	eng.GET("/PassLogin", Pass_Auth(db, handle))
+	eng.GET("/PassSigup", Pass_Signup(db, handle))
 	eng.POST("/auth/refresh", handle.RefreshHandler)
 	eng.GET("/auth/public-key", Expose_pub_key(s))
 	eng.NoRoute(handle.MiddlewareFunc(), handleNoRoute())

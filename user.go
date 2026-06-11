@@ -26,7 +26,7 @@ func create_table_user(db *Db_data) {
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		name TEXT NOT NULL,
 		email TEXT UNIQUE NOT NULL,
-		picture TEXT NOT NULL
+		picture TEXT
 	);`
 	ctx, cancel = db.ctx()
 	defer cancel()
@@ -70,7 +70,7 @@ func GetUser(db *Db_data, email string) (*User, error) {
 	return user, err
 }
 
-func CheckUserPassword(db *Db_data, req LoginRequest) (bool, *User, error) {
+func CheckUserPassword(db *Db_data, req LoginRequest) (bool, error) {
 	var match		bool
 	var err			error
 	var sql			string

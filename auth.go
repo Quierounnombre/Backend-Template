@@ -219,7 +219,7 @@ func Pass_Auth(
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
 			return
 		}
-		match, user, err = CheckUserPassword(db, req)
+		match, err = CheckUserPassword(db, req)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -236,7 +236,57 @@ func Pass_Auth(
 		c.Set(authMiddleware.IdentityKey, user)
 		token, err = authMiddleware.TokenGenerator(c.Request.Context(), user)
 		if err != nil {
-			return err
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		authMiddleware.SetCookie(c, token.AccessToken)
+		authMiddleware.SetRefreshTokenCookie(c, token.RefreshToken)
+		if authMiddleware.LoginResponse != nil {
+			authMiddleware.LoginResponse(c, token)
+		}
+	}
+}
+
+func Pass_Signup(
+	db				*Db_data,
+	authMiddleware	*g_jwt.GinJWTMiddleware,
+) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req		SignUpRequest
+		var err		error
+		var token	*core.Token
+		var user	*User
+
+		err = c.ShouldBindJSON(&req)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			return
+		}
+		if req.Email == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
+			return
+		}
+		if req.Name == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing name"})
+			return
+		}
+		if req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing password"})
+			return
+		}
+		user = new(User)
+		user.Email = req.Email
+		user.Name = req.Name
+		user, err = Login_or_ADD_User(db, user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.Set(authMiddleware.IdentityKey, user)
+		token, err = authMiddleware.TokenGenerator(c.Request.Context(), user)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 		authMiddleware.SetCookie(c, token.AccessToken)
 		authMiddleware.SetRefreshTokenCookie(c, token.RefreshToken)
