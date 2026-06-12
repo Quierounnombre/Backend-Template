@@ -75,6 +75,10 @@ type OAuth_settings struct {
 	Token_provider		string				`yaml:"token_provider"`
 }
 
+type Mail_settings struct {
+	Provider			string				`yaml:"provider"`
+}
+
 type Settings struct {
 	Release_mode		string				`yaml:"release_mode"`
 	Frontend			string				`yaml:"frontend"`
@@ -84,9 +88,11 @@ type Settings struct {
 	Jwt					Jwt_settings		`yaml:"jwt"`
 	OAuth				OAuth_settings		`yaml:"oauth"`
 	Limiter				Rate_limits			`yaml:"rate"`
+	Mail				Mail_settings		`yaml:"mail"`
 
 	// injected from .env
 
+	Mail_key			string
 	Session_key			string
 	Jwt_priv_key		string
 	Jwt_pub_key			string
