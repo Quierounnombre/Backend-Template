@@ -30,6 +30,7 @@ func load_settings_from_env(s *Settings) {
 	s.DB_url = parse_string_env("DATABASE_URL")
 	s.Client_id = parse_string_env("CLIENT_ID")
 	s.Client_secret = parse_string_env("CLIENT_SECRET")
+	s.Mail_key = parse_string_env("MAIL_KEY")
 }
 
 func parse_string_env(key string) (string) {

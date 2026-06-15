@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"gopkg.in/gomail.v2"
 )
 
 //----------------------------------------------------------------------------------------------SETTINGS
@@ -77,6 +78,7 @@ type OAuth_settings struct {
 
 type Mail_settings struct {
 	Provider			string				`yaml:"provider"`
+	User				string				`yaml:"user"` //NOTE, THIS MAY NEED CHANGE WHEN USING different emails, ex: support@company and RRHH@company
 }
 
 type Settings struct {
