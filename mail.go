@@ -22,7 +22,7 @@ func Mail_Reset_Pass(s *Settings, target string) error {
 	m.SetHeader("From", s.Mail.User)
 	m.SetHeader("To", target)
 	m.SetHeader("Subject", "Reset your password")
-	m.SetBody("text/html", resetPasswordHTML()) //HERE YOU NEED TO DO SOME WORK FOR THE PROPER LINK CREATION/INVALIDATION
+	m.SetBody("text/html", resetPasswordHTML("https://wikipedia.com")) //HERE YOU NEED TO DO SOME WORK FOR THE PROPER LINK CREATION/INVALIDATION
 	err := Send_Mail(s, m)
 	if err != nil {
 		return err

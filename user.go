@@ -168,3 +168,16 @@ func GetProfile(db *Db_data) gin.HandlerFunc {
 		})
 	}
 }
+
+func ResetPass(s *Settings) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		var err		error
+
+		err = Mail_Reset_Pass(s, "vicengandrade@gmail.com")
+		if err != nil {
+			c.JSON(500, gin.H{"Error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"result": "Check your email"})
+	}
+}

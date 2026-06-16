@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/gomail.v2"
 )
 
 //----------------------------------------------------------------------------------------------SETTINGS
