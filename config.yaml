@@ -58,5 +58,5 @@ rate:
   reset_interval: 5m
 
 mail:
-  provider: "smpt.mailgun.org"
+  provider: "smtp.mailgun.org"
   user: "MailTest@sandbox3559960e87ba466eb56a024ece83cb47.mailgun.org"
