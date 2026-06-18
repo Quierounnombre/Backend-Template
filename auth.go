@@ -279,7 +279,12 @@ func Pass_Signup(
 		user.Name = req.Name
 		user, err = Login_or_ADD_User(db, user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		err = StorePass(db, req.Password, req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		c.Set(authMiddleware.IdentityKey, user)

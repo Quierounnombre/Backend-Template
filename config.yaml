@@ -3,7 +3,7 @@
 #This needs to be a string stating with :
 port: ":8080"
 release_mode: "debug"
-frontend: "https://backend-template-production.up.railway.app"
+frontend: "https://localhost:8080"
 
 db:
   max_cons: 4

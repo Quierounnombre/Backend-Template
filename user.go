@@ -27,7 +27,7 @@ func create_table_user(db *Db_data) {
 	CREATE TABLE IF NOT EXISTS users (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		name TEXT NOT NULL,
-		password_hash TEXT
+		password_hash TEXT,
 		email TEXT UNIQUE NOT NULL,
 		picture TEXT
 	);`
@@ -217,10 +217,11 @@ func ResetPass(s *Settings, db *Db_data) gin.HandlerFunc {
 		_, err = GetUser(db, body.Email)
 		if err != nil {
 			//NOT LEAKING WHICH EMAILS EXIST
+			log.Printf("Someone tryed to modify password for email %s", body.Email)
 			c.JSON(200, gin.H{"result": "Check your email"})
 			return
 		}
-		err = Mail_Reset_Pass(s, body.Email)
+		err = Mail_Reset_Pass(s, db, body.Email)
 		if err != nil {
 			c.JSON(500, gin.H{"Error": err.Error()})
 			return
@@ -251,6 +252,12 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 			return
 		}
 		err = StorePass(db, body.NewPass, body.Email)
+		if err != nil {
+			c.JSON(500, gin.H{"Error:": " Error updating password"})
+			return
+		}
+		id := c.Param("id")
+		err = delete_a_password_reset(db, id)
 		if err != nil {
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return

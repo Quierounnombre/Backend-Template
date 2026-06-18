@@ -17,13 +17,19 @@ func Send_Mail(s *Settings, m *gomail.Message) error {
 	return nil
 }
 
-func Mail_Reset_Pass(s *Settings, target string) error {
+func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
+	var err		error
+
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.Mail.User)
 	m.SetHeader("To", target)
 	m.SetHeader("Subject", "Reset your password")
-	m.SetBody("text/html", resetPasswordHTML("https://wikipedia.com")) //HERE YOU NEED TO DO SOME WORK FOR THE PROPER LINK CREATION/INVALIDATION
-	err := Send_Mail(s, m)
+	id, err := create_a_password_reset(db, target)
+	if err != nil {
+		return err
+	}
+	m.SetBody("text/html", resetPasswordHTML(s.Frontend + "/reset_pass_new/" + id)) //HERE YOU NEED TO DO SOME WORK FOR THE PROPER LINK CREATION/INVALIDATION
+	err = Send_Mail(s, m)
 	if err != nil {
 		return err
 	}
