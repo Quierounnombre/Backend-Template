@@ -106,7 +106,7 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 		}
 		response_state = c.Query("state")
 		if response_state == "" {
-			c.JSON(400, gin.H{"error": "missing state"})
+			c.JSON(401, gin.H{"error": "missing state"})
 			return
 		}
 		if state != response_state {

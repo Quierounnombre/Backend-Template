@@ -5,12 +5,14 @@ package main
 //TODO: A way to update user changes
 
 import (
-	"log"
 	"context"
-	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
+	"log"
+
 	g_jwt "github.com/appleboy/gin-jwt/v3"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func create_table_user(db *Db_data) {
@@ -25,6 +27,7 @@ func create_table_user(db *Db_data) {
 	CREATE TABLE IF NOT EXISTS users (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 		name TEXT NOT NULL,
+		password_hash TEXT
 		email TEXT UNIQUE NOT NULL,
 		picture TEXT
 	);`
@@ -70,22 +73,48 @@ func GetUser(db *Db_data, email string) (*User, error) {
 	return user, err
 }
 
-func CheckUserPassword(db *Db_data, req LoginRequest) (bool, error) {
-	var match		bool
+func StorePass(db *Db_data, pass string, email string) error {
 	var err			error
 	var sql			string
-	var ctx			context.Context
-	var cancel		context.CancelFunc
+	var pass_hash	[]byte
+
+	sql = `
+	UPDATE users SET password_hash=$1 WHERE email=$2
+	`
+	pass_hash, err = bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := db.ctx()
+	defer cancel()
+	_, err = db.pool.Exec(ctx, sql, string(pass_hash), email)
+	return err
+}
+
+func CheckUserPassword(db *Db_data, req LoginRequest) (bool, error) {
+	var pass_hash	string
+	var err			error
+	var sql			string
 	var row			pgx.Row
 
 	sql = `
-	SELECT password_hash = crypt(1$, password_hash) FROM users WHERE email=2$
+	SELECT password_hash FROM users WHERE email=$1
 	`
-	ctx, cancel = db.ctx()
+	ctx, cancel := db.ctx()
 	defer cancel()
-	row = db.pool.QueryRow(ctx, sql, req.Password, req.Email)
-	err = row.Scan(&match)
-	return match, err
+	row = db.pool.QueryRow(ctx, sql, req.Email)
+	err = row.Scan(&pass_hash)
+	if err != nil {
+		return false, err
+	}
+	if pass_hash == "" {
+		return false, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(pass_hash), []byte(req.Password))
+	if err != nil {
+		return false, err
+	}
+	return true, err
 }
 
 func Login_or_ADD_User(db *Db_data, storage_data *User) (*User, error) {
@@ -136,7 +165,7 @@ func EraseUser(db *Db_data) gin.HandlerFunc {
 		defer cancel()
 		_, err = db.pool.Exec(ctx, sql, email)
 		if err != nil {
-			c.JSON(400, gin.H{"Error deleting user:": err.Error()})
+			c.JSON(500, gin.H{"Error deleting user:": err.Error()})
 			return
 		}
 		c.JSON(200, gin.H{})
@@ -158,7 +187,7 @@ func GetProfile(db *Db_data) gin.HandlerFunc {
 		}
 		user, err = GetUser(db, email)
 		if err != nil {
-			c.JSON(400, gin.H{"Error:": " obtaining user from db"})
+			c.JSON(500, gin.H{"Error:": " obtaining user from db"})
 			return
 		}
 		c.JSON(200, gin.H{
@@ -169,15 +198,63 @@ func GetProfile(db *Db_data) gin.HandlerFunc {
 	}
 }
 
-func ResetPass(s *Settings) gin.HandlerFunc {
+func ResetPass(s *Settings, db *Db_data) gin.HandlerFunc {
 	return func (c *gin.Context) {
 		var err		error
+		var body	struct {
+			Email string `json:"email"`
+		}
 
-		err = Mail_Reset_Pass(s, "vicengandrade@gmail.com")
+		err = c.ShouldBindJSON(&body)
+		if err != nil {
+			c.JSON(400, gin.H{"Error:": " Invalid content"})
+			return 
+		}
+		if body.Email == "" {
+			c.JSON(400, gin.H{"Error:": " Missing email"})
+			return
+		}
+		_, err = GetUser(db, body.Email)
+		if err != nil {
+			//NOT LEAKING WHICH EMAILS EXIST
+			c.JSON(200, gin.H{"result": "Check your email"})
+			return
+		}
+		err = Mail_Reset_Pass(s, body.Email)
 		if err != nil {
 			c.JSON(500, gin.H{"Error": err.Error()})
 			return
 		}
 		c.JSON(200, gin.H{"result": "Check your email"})
+	}
+}
+
+func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		var err		error
+		var body	struct {
+			NewPass		string `json:"newpass"`
+			Email		string `json:"email"`
+		}
+
+		err = c.ShouldBindJSON(&body)
+		if err != nil {
+			c.JSON(400, gin.H{"Error:": " Invalid content"})
+			return 
+		}
+		if body.Email == "" {
+			c.JSON(400, gin.H{"Error:": " Missing email"})
+			return
+		}
+		if body.NewPass == "" {
+			c.JSON(400, gin.H{"Error:": " Missing password"})
+			return
+		}
+		err = StorePass(db, body.NewPass, body.Email)
+		if err != nil {
+			c.JSON(500, gin.H{"Error:": " Error updating password"})
+			return
+		}
+		c.JSON(200, gin.H{"Success": "Password updated"})
 	}
 }
