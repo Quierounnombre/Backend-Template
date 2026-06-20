@@ -5,6 +5,8 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+// May need hardening when sending emails, could be abuse to launch 10x
+
 //This works fine when sending 20 mails/min...
 func Send_Mail(s *Settings, m *gomail.Message) error {
 	//587 is hardcoded for the SMPT protocol

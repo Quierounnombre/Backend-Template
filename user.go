@@ -202,7 +202,7 @@ func ResetPass(s *Settings, db *Db_data) gin.HandlerFunc {
 	return func (c *gin.Context) {
 		var err		error
 		var body	struct {
-			Email string `json:"email"`
+			Email	string `json:"email"`
 		}
 
 		err = c.ShouldBindJSON(&body)
@@ -232,8 +232,9 @@ func ResetPass(s *Settings, db *Db_data) gin.HandlerFunc {
 
 func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 	return func (c *gin.Context) {
-		var err		error
-		var body	struct {
+		var err			error
+		var db_email	string
+		var body		struct {
 			NewPass		string `json:"newpass"`
 			Email		string `json:"email"`
 		}
@@ -251,17 +252,62 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 			c.JSON(400, gin.H{"Error:": " Missing password"})
 			return
 		}
+		id := c.Param("id")
+		db_email, err = GetPassReset(db, id)
+		if err != nil {
+			log.Printf("Someone tryed to modify password for email %s = %v", body.Email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error updating password"})
+			return 
+		}
+		if db_email != body.Email {
+			log.Printf("Someone tryed to modify password for email %s = %v", body.Email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error updating password"})
+			return 
+		}
 		err = StorePass(db, body.NewPass, body.Email)
 		if err != nil {
+			log.Printf("Someone tryed to modify password for email %s", body.Email)
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return
 		}
-		id := c.Param("id")
 		err = delete_a_password_reset(db, id)
 		if err != nil {
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return
 		}
 		c.JSON(200, gin.H{"Success": "Password updated"})
+	}
+}
+
+func Validate_2FA(s *Settings, db *Db_data) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		var err			error
+		var db_email	string
+		
+		id := c.Param("id")
+		db_email, err = Get2FA(db, id)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return 
+		}
+		user, err := GetUser(db, db_email)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+		if db_email == user.Email {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return 
+		}
+		err = delete_a_2FA(db, id)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+
 	}
 }

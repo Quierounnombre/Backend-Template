@@ -65,9 +65,9 @@ func Set_endpoints(
 	handle		*g_jwt.GinJWTMiddleware,
 ) {
 	eng.GET("/OAuthLogin", OAuthLogin(s))
-	eng.GET("/OAuthCallback", OAuthCallback(s, db, handle))
-	eng.GET("/PassLogin", Pass_Auth(db, handle))
-	eng.GET("/PassSigup", Pass_Signup(db, handle))
+	eng.POST("/OAuthCallback", OAuthCallback(s, db, handle))
+	eng.POST("/PassLogin", Pass_Auth(db, handle))
+	eng.POST("/PassSigup", Pass_Signup(db, handle))
 	eng.GET("/PassReset", ResetPass(s, db))
 	eng.POST("/auth/refresh", handle.RefreshHandler)
 	eng.GET("/auth/public-key", Expose_pub_key(s))
@@ -76,7 +76,7 @@ func Set_endpoints(
 	{
 		auth.GET("/profile", GetProfile(db))
 		auth.GET("/logout", handle.LogoutHandler)
-		auth.GET("/erase_user", EraseUser(db))
+		auth.POST("/erase_user", EraseUser(db))
 	}
 }
 

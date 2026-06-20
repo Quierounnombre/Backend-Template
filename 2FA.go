@@ -1,18 +1,19 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"time"
-	"errors"
+
 	"github.com/google/uuid"
 )
 
-func create_password_reset_table(db *Db_data) {
+func create_2FA_table(db *Db_data) {
 	var sql		string
 	var err		error
 
 	sql = `
-	CREATE TABLE IF NOT EXISTS reset_pass (
+	CREATE TABLE IF NOT EXISTS 2fa_pending (
 		id TEXT PRIMARY KEY,
 		email TEXT UNIQUE NOT NULL,
 		time TIMESTAMPTZ DEFAULT NOW()
@@ -23,20 +24,20 @@ func create_password_reset_table(db *Db_data) {
 	if err != nil {
 		log.Fatalf("error creating table: %s", err.Error())
 	}
-	go cleanup_password_reset_table(db)
+	go cleanup_2FA_table(db)
 }
 
-func cleanup_password_reset_table(db *Db_data) {
+func cleanup_2FA_table(db *Db_data) {
 	var sql				string
 
 	sql = `
-	DELETE FROM reset_pass WHERE created_at < NOW() - $1::interval
+	DELETE FROM 2fa_pending WHERE created_at < NOW() - $1::interval
 	`
 	ticker := time.NewTicker(D_Reset_check_time)
 	defer ticker.Stop()
 	for range ticker.C {
 		ctx, cancel := db.ctx()
-		_, err := db.pool.Exec(ctx, sql, D_Reset_pass_time.String())
+		_, err := db.pool.Exec(ctx, sql, D_2FA_time.String())
 		if err != nil {
 			log.Fatalf("error at checking table: %s", err.Error())
 		}
@@ -44,7 +45,7 @@ func cleanup_password_reset_table(db *Db_data) {
 	}
 }
 
-func create_a_password_reset(db *Db_data, email string) (string, error) {
+func create_a_2FA(db *Db_data, email string) (string, error) {
 	var sql		string
 	var err		error
 
@@ -52,7 +53,7 @@ func create_a_password_reset(db *Db_data, email string) (string, error) {
 		return "", errors.New("email is empty")
 	}
 	sql = `
-	INSERT INTO reset_pass (id, email) VALUES ($1, $2)
+	INSERT INTO 2fa_pending (id, email) VALUES ($1, $2)
 	`
 	id := uuid.New().String()
 	ctx, cancel := db.ctx()
@@ -61,12 +62,12 @@ func create_a_password_reset(db *Db_data, email string) (string, error) {
 	return id, err
 }
 
-func delete_a_password_reset(db *Db_data, id string) error {
+func delete_a_2FA(db *Db_data, id string) error {
 	var sql		string
 	var err		error
 
 	sql = `
-	DELETE FROM reset_pass WHERE id=$1
+	DELETE FROM 2fa_pending WHERE id=$1
 	`
 	ctx, cancel := db.ctx()
 	defer cancel()
@@ -74,13 +75,13 @@ func delete_a_password_reset(db *Db_data, id string) error {
 	return err
 }
 
-func GetPassReset(db *Db_data, id string) (string, error) {
+func Get2FA(db *Db_data, id string) (string, error) {
 	var err		error
 	var sql		string
 	var email	string
 
 	sql = `
-	SELECT email FROM reset_pass WHERE id=$1
+	SELECT email FROM 2fa_pending WHERE id=$1
 	`
 	ctx, cancel := db.ctx()
 	defer cancel()
