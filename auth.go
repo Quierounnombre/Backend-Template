@@ -3,16 +3,19 @@ package main
 //Manage Auth process(OAuth only atm) and endpoints
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/sessions"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/appleboy/gin-jwt/v3/core"
-	g_jwt "github.com/appleboy/gin-jwt/v3"
 	"crypto/rand"
-	"net/url"
-	"net/http"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+
+	g_jwt "github.com/appleboy/gin-jwt/v3"
+	"github.com/appleboy/gin-jwt/v3/core"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 //JWT MANUAL: https://pkg.go.dev/github.com/golang-jwt/jwt/v5#section-documentation
@@ -221,7 +224,7 @@ func Pass_Auth(
 		}
 		match, err = CheckUserPassword(db, req)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error checking password"})
 			return
 		}
 		if match == false {
@@ -247,15 +250,15 @@ func Pass_Auth(
 	}
 }
 
-func Pass_Signup(
+func Pass_Singup(
+	s				*Settings,
 	db				*Db_data,
 	authMiddleware	*g_jwt.GinJWTMiddleware,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req		SignUpRequest
 		var err		error
-		var token	*core.Token
-		var user	*User
+		var user	User
 
 		err = c.ShouldBindJSON(&req)
 		if err != nil {
@@ -274,21 +277,66 @@ func Pass_Signup(
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing password"})
 			return
 		}
-		user = new(User)
 		user.Email = req.Email
 		user.Name = req.Name
-		user, err = Login_or_ADD_User(db, user)
+		id, err := create_a_2FA(db, &user, req.Password)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("Failed 2FA %s = %v", req.Email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
-		err = StorePass(db, req.Password, req.Email)
+		err = TwoFA_Mail(s, db, req.Email, id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("Failed sending email(%s) = %v", req.Email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+		c.JSON(200, gin.H{"result": "Check your email"})
+	}
+}
+
+func Validate_2FA(
+	s					*Settings,
+	db					*Db_data,
+	authMiddleware		*g_jwt.GinJWTMiddleware,
+) gin.HandlerFunc {
+	return func (c *gin.Context) {
+		var err			error
+		var db_email	string
+		
+		id := c.Param("id")
+		db_email, err = Get2FA(db, id)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return 
+		}
+		_, err = GetUser(db, db_email)
+		if err != pgx.ErrNoRows {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+		err = Move_2FA_to_users(db, id)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+		err = delete_a_2FA(db, id)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+		user, err := GetUser(db, db_email)
+		if err != nil {
+			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		c.Set(authMiddleware.IdentityKey, user)
-		token, err = authMiddleware.TokenGenerator(c.Request.Context(), user)
+		token, err := authMiddleware.TokenGenerator(c.Request.Context(), user)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -298,5 +346,6 @@ func Pass_Signup(
 		if authMiddleware.LoginResponse != nil {
 			authMiddleware.LoginResponse(c, token)
 		}
+		c.JSON(200, gin.H{"logged:": "YES"})
 	}
 }

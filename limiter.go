@@ -35,6 +35,6 @@ func (rl *RateLimiter)Cleanup() {
 		rl.mu.Lock()
 		rl.reqs = make(map[string]uint)
 		rl.mu.Unlock()
-		log.Panicln("rate limit: reset")
+		log.Print("rate limit: reset")
 	}
 }

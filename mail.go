@@ -25,12 +25,12 @@ func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.Mail.User)
 	m.SetHeader("To", target)
-	m.SetHeader("Subject", "Reset your password")
+	m.SetHeader("Subject", "Cambiar contraseña")
 	id, err := create_a_password_reset(db, target)
 	if err != nil {
 		return err
 	}
-	m.SetBody("text/html", resetPasswordHTML(s.Frontend + "/reset_pass_new/" + id)) //HERE YOU NEED TO DO SOME WORK FOR THE PROPER LINK CREATION/INVALIDATION
+	m.SetBody("text/html", resetPasswordHTML(s.Frontend + "/reset_pass_new/" + id))
 	err = Send_Mail(s, m)
 	if err != nil {
 		return err
@@ -41,10 +41,36 @@ func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
 func resetPasswordHTML(link string) string {
 	return (`<html>
 		<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-			<h2>Reset your password</h2>
-			<p>Click the button below to reset your password.</p>
-			<a href="` + link + `" style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px">Reset Password</a>
-			<p style="color:#999;font-size:12px;margin-top:20px">If you didn't request this, ignore this email.</p>
+			<h2>Cambiar contraseña</h2>
+			<p>Pulsa el boton para cambiar tu contraseña.</p>
+			<a href="` + link + `" style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px">Cambiar contraseña</a>
+			<p style="color:#999;font-size:12px;margin-top:20px">En caso de no haberlo solicitado, ponte en contacto con nosotros.</p>
+		</body>
+	</html>`)
+}
+
+func TwoFA_Mail(s *Settings, db *Db_data, target string, id string) error {
+	var err		error
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", s.Mail.User)
+	m.SetHeader("To", target)
+	m.SetHeader("Subject", "Doble factor de autentificación")
+	m.SetBody("text/html", TwoFAHTML(s.Frontend + "/2FA_validate/" + id))
+	err = Send_Mail(s, m)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func TwoFAHTML(link string) string {
+	return (`<html>
+		<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
+			<h2>Doble factor de autentificación</h2>
+			<p>Haz click en el boton para terminar de registrarte.</p>
+			<a href="` + link + `" style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px">Registrarme</a>
+			<p style="color:#999;font-size:12px;margin-top:20px">En caso de no haberlo solicitado, ponte en contacto con nosotros.</p>
 		</body>
 	</html>`)
 }

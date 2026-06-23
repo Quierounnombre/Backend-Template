@@ -54,8 +54,8 @@ oauth:
   redirect_uri: "https://backend-template-production.up.railway.app/OAuthCallback"
 
 rate:
-  max_request: 50
-  reset_interval: 5m
+  max_request: 5
+  reset_interval: 2m
 
 mail:
   provider: "smtp.mailgun.org"

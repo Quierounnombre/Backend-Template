@@ -29,7 +29,8 @@ func create_table_user(db *Db_data) {
 		name TEXT NOT NULL,
 		password_hash TEXT,
 		email TEXT UNIQUE NOT NULL,
-		picture TEXT
+		picture TEXT,
+		joined TIMESTAMPTZ DEFAULT NOW()
 	);`
 	ctx, cancel = db.ctx()
 	defer cancel()
@@ -73,13 +74,15 @@ func GetUser(db *Db_data, email string) (*User, error) {
 	return user, err
 }
 
-func StorePass(db *Db_data, pass string, email string) error {
+//This hassed the password
+//IMPORTANT, THE TABLE MUST CONTAIN A FIELD called "password_hash" and anothe called "email" if not, caos ensues.
+func StorePass(db *Db_data, pass string, email string, table string) error {
 	var err			error
 	var sql			string
 	var pass_hash	[]byte
 
 	sql = `
-	UPDATE users SET password_hash=$1 WHERE email=$2
+	UPDATE ` + table + ` SET password_hash=$1 WHERE email=$2
 	`
 	pass_hash, err = bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
@@ -88,6 +91,21 @@ func StorePass(db *Db_data, pass string, email string) error {
 	ctx, cancel := db.ctx()
 	defer cancel()
 	_, err = db.pool.Exec(ctx, sql, string(pass_hash), email)
+	return err
+}
+
+//Store the password "plain" used ONLY to move already hashed password from one place to another
+//IMPORTANT, THE TABLE MUST CONTAIN A FIELD called "password_hash" and anothe called "email" if not, caos ensues.
+func StorePassSimple(db *Db_data, pass string, email string, table string) error {
+	var err			error
+	var sql			string
+
+	sql = `
+	UPDATE ` + table + ` SET password_hash=$1 WHERE email=$2
+	`
+	ctx, cancel := db.ctx()
+	defer cancel()
+	_, err = db.pool.Exec(ctx, sql, string(pass), email)
 	return err
 }
 
@@ -264,7 +282,7 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return 
 		}
-		err = StorePass(db, body.NewPass, body.Email)
+		err = StorePass(db, body.NewPass, body.Email, "users")
 		if err != nil {
 			log.Printf("Someone tryed to modify password for email %s", body.Email)
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
@@ -276,38 +294,5 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, gin.H{"Success": "Password updated"})
-	}
-}
-
-func Validate_2FA(s *Settings, db *Db_data) gin.HandlerFunc {
-	return func (c *gin.Context) {
-		var err			error
-		var db_email	string
-		
-		id := c.Param("id")
-		db_email, err = Get2FA(db, id)
-		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
-			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
-			return 
-		}
-		user, err := GetUser(db, db_email)
-		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
-			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
-			return
-		}
-		if db_email == user.Email {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
-			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
-			return 
-		}
-		err = delete_a_2FA(db, id)
-		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
-			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
-			return
-		}
-
 	}
 }
