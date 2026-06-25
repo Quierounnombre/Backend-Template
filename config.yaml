@@ -2,7 +2,7 @@
 
 #This needs to be a string stating with :
 port: ":8080"
-release_mode: "debug" #Gin release mode
+release_mode: "debug" #switch to "release" in prod
 frontend: "https://localhost:8080" #Your frontend path(for OAuth)
 
 db:
@@ -69,7 +69,7 @@ logger:
   max_backups: 4 #Number of backups allowed
   local_time: true #False = UTC, true = machine zone.
   compress: false #If this should compress the logs
-  source: false #DEBUG info for leaving the entrypoint for a logging action
+  source: true #DEBUG info for leaving the entrypoint for a logging action
 
 #Mail, quite simple, add a provider, and the mail that would send the emails
 mail:

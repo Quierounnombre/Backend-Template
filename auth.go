@@ -349,6 +349,5 @@ func Validate_2FA(
 			authMiddleware.LoginResponse(c, token)
 		}
 		slog.Info("user registered", "user_id", user.UserID)
-		c.JSON(200, gin.H{"logged:": "YES"})
 	}
 }

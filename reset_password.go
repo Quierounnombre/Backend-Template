@@ -54,12 +54,13 @@ func create_a_password_reset(db *Db_data, email string) (string, error) {
 		return "", errors.New("email is empty")
 	}
 	sql = `
-	INSERT INTO reset_pass (id, email) VALUES ($1, $2)
+	INSERT INTO reset_pass (id, email, created_at) VALUES ($1, $2, $3)
+	ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, created_at = EXCLUDED.created_at
 	`
 	id := uuid.New().String()
 	ctx, cancel := db.ctx()
 	defer cancel()
-	_, err = db.pool.Exec(ctx, sql, id, email)
+	_, err = db.pool.Exec(ctx, sql, id, email, time.Now())
 	return id, err
 }
 
@@ -86,7 +87,7 @@ func GetPassReset(db *Db_data, id string) (string, error) {
 	`
 	ctx, cancel := db.ctx()
 	defer cancel()
-	row := db.pool.QueryRow(ctx, sql, email)
+	row := db.pool.QueryRow(ctx, sql, id)
 	err = row.Scan(&email)
 	return email, err
 }

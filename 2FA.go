@@ -85,12 +85,13 @@ func create_a_2FA(db *Db_data, user *User, password string) (string, error) {
 		return "", errors.New("email is empty")
 	}
 	sql = `
-	INSERT INTO pending_2fa (id, email, name, picture) VALUES ($1, $2, $3, $4)
+	INSERT INTO pending_2fa (id, email, name, picture, created_at) VALUES ($1, $2, $3, $4, $5)
+	ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id, name = EXCLUDED.name, picture = EXCLUDED.picture, created_at = EXCLUDED.created_at
 	`
 	id := uuid.New().String()
 	ctx, cancel := db.ctx()
 	defer cancel()
-	_, err = db.pool.Exec(ctx, sql, id, user.Email, user.Name, user.Picture)
+	_, err = db.pool.Exec(ctx, sql, id, user.Email, user.Name, user.Picture, time.Now())
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +122,7 @@ func Get2FA(db *Db_data, id string) (string, error) {
 	`
 	ctx, cancel := db.ctx()
 	defer cancel()
-	row := db.pool.QueryRow(ctx, sql, email)
+	row := db.pool.QueryRow(ctx, sql, id)
 	err = row.Scan(&email)
 	return email, err
 }

@@ -65,12 +65,12 @@ func Set_endpoints(
 	handle		*g_jwt.GinJWTMiddleware,
 ) {
 	eng.GET("/OAuthLogin", OAuthLogin(s))
-	eng.POST("/OAuthCallback", OAuthCallback(s, db, handle))
+	eng.GET("/OAuthCallback", OAuthCallback(s, db, handle))
 	eng.POST("/PassLogin", Pass_Auth(db, handle))
 	eng.POST("/PassSingup", Pass_Singup(s, db, handle))
-	eng.POST("/2FA_validate/[id]", Validate_2FA(s, db, handle))
+	eng.GET("/2FA_validate/:id", Validate_2FA(s, db, handle))
 	eng.POST("/PassReset", ResetPass(s, db))
-	eng.POST("/reset_pass_new/[id]", ResetPassSend(s, db))
+	eng.POST("/reset_pass_new/:id", ResetPassSend(s, db))
 	eng.POST("/auth/refresh", handle.RefreshHandler)
 	eng.GET("/auth/public-key", Expose_pub_key(s))
 	eng.NoRoute(handle.MiddlewareFunc(), handleNoRoute())
