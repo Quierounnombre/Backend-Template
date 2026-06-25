@@ -40,6 +40,7 @@ Built around the assumption that an email is all you need for building a product
 - Secrets never touch `config.yaml`. If you're committing your `.env` to a production repo, that's on you.
 - OAuth and password auth share the same user model, no duplicates.
 - JWT uses an RS256 asymmetric keys, obtain the public key at `your_domain/auth/public-key`
+- JWT has no revocation, for this i recomend at the moment to set a low time between token refresh(PR to fix it are accepted)
 - Your frontend needs a `reset_password_new` GET endpoint, that sends a POST to the `reset_password_new` (We don't want to leak user passwords, don't we?).
 
 
