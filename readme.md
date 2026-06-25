@@ -27,7 +27,7 @@ Built around the assumption that an email is all you need for building a product
 | **Logging** | Log rotations, storage, compresion included |
 
 
-> **On rate limiting at scale:** IP-based limiting will eventually lead to false-positives on shared IPs (offices, proxies). Fine for an MVP, and even <100 users/day(If you set a huge wiggle room). plan to swap it out before you're big enough to care.
+> **On rate limiting at scale:** IP-based limiting will eventually lead to false-positives on shared IPs (offices, proxies). Fine for an MVP, and even <100 users/day. plan to swap it out before you're big enough to care.
 
 
 ---
@@ -40,7 +40,7 @@ Built around the assumption that an email is all you need for building a product
 - Secrets never touch `config.yaml`. If you're committing your `.env` to a production repo, that's on you.
 - OAuth and password auth share the same user model, no duplicates.
 - JWT uses an RS256 asymmetric keys, obtain the public key at `your_domain/auth/public-key`
-- Your frontend need a reset_password_new GET endpoint, that send a POST to the reset_password_new.
+- Your frontend needs a `reset_password_new` GET endpoint, that sends a POST to the `reset_password_new` (We don't want to leak user passwords, don't we?).
 
 
 ---
@@ -50,7 +50,7 @@ Built around the assumption that an email is all you need for building a product
 
 
 ```bash
-git clone <repo>
+git clone git@github.com:Quierounnombre/Backend-Template.git
 cp .env.example .env   # fill in your secrets
 docker compose up --build
 ```
@@ -82,3 +82,7 @@ When **not** to use this:
 - If you don't need user accounts, this is overkill.
 - You are at huge scales, many small decisions are made on the assumptions are based on low user counts, this may require tuning in **MAIL** & **RATE LIMITER**
 - You like dolphins
+
+## Need help?
+
+Ask me on [LinkedIn](https://www.linkedin.com/in/vicente-garcia-andrade/), happy to talk :)
