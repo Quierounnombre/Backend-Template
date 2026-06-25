@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 
 	g_jwt "github.com/appleboy/gin-jwt/v3"
 	"github.com/gin-gonic/gin"
@@ -235,7 +236,7 @@ func ResetPass(s *Settings, db *Db_data) gin.HandlerFunc {
 		_, err = GetUser(db, body.Email)
 		if err != nil {
 			//NOT LEAKING WHICH EMAILS EXIST
-			log.Printf("Someone tryed to modify password for email %s", body.Email)
+			slog.Warn("Someone tryed to moddify the password for an account that dosent exist")
 			c.JSON(200, gin.H{"result": "Check your email"})
 			return
 		}
@@ -273,26 +274,28 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 		id := c.Param("id")
 		db_email, err = GetPassReset(db, id)
 		if err != nil {
-			log.Printf("Someone tryed to modify password for email %s = %v", body.Email, err.Error())
+			slog.Warn("password reset token not found", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return 
 		}
 		if db_email != body.Email {
-			log.Printf("Someone tryed to modify password for email %s = %v", body.Email, err.Error())
+			slog.Warn("password reset email mismatch")
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return 
 		}
 		err = StorePass(db, body.NewPass, body.Email, "users")
 		if err != nil {
-			log.Printf("Someone tryed to modify password for email %s", body.Email)
+			slog.Error("password store failed", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return
 		}
 		err = delete_a_password_reset(db, id)
 		if err != nil {
+			slog.Error("password reset token delete failed", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return
 		}
+		slog.Info("password reset successful")
 		c.JSON(200, gin.H{"Success": "Password updated"})
 	}
 }

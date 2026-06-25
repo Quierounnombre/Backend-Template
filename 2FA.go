@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,7 +17,7 @@ func create_2FA_table(db *Db_data) {
 	CREATE TABLE IF NOT EXISTS pending_2fa (
 		id TEXT PRIMARY KEY,
 		email TEXT UNIQUE NOT NULL,
-		time TIMESTAMPTZ DEFAULT NOW(),
+		created_at TIMESTAMPTZ DEFAULT NOW(),
 		name TEXT NOT NULL,
 		password_hash TEXT,
 		picture TEXT
@@ -42,8 +43,9 @@ func cleanup_2FA_table(db *Db_data) {
 		ctx, cancel := db.ctx()
 		_, err := db.pool.Exec(ctx, sql, D_2FA_time.String())
 		if err != nil {
-			log.Fatalf("error at checking table: %s", err.Error())
+			slog.Error("cleanup failed", "err", err)
 		}
+		slog.Info("Cleaned 2fa_pending")
 		cancel()
 	}
 }

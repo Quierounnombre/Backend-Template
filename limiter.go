@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -35,6 +35,6 @@ func (rl *RateLimiter)Cleanup() {
 		rl.mu.Lock()
 		rl.reqs = make(map[string]uint)
 		rl.mu.Unlock()
-		log.Print("rate limit: reset")
+		slog.Info("rate limit: reset")
 	}
 }

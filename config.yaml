@@ -2,19 +2,20 @@
 
 #This needs to be a string stating with :
 port: ":8080"
-release_mode: "debug"
-frontend: "https://localhost:8080"
+release_mode: "debug" #Gin release mode
+frontend: "https://localhost:8080" #Your frontend path(for OAuth)
 
 db:
-  max_cons: 4
-  min_cons: 1
-  min_idle_cons: 1
+  max_cons: 4 #Max simultaneous cons
+  min_cons: 1 #Min cons active
+  min_idle_cons: 1 #Min cons that are idle
   health_check_period: "1m"
   max_con_lifetime: "5m"
   max_con_lifetime_jitter: "1m"
   max_con_idle_time: "3m"
-  ctx_timeout: "15s"
+  ctx_timeout: "15s" #Max time waiting for a call to the db
 
+#Standar CORS settings, prety self explicatory
 cors:
   allow_all_origins: false
   allow_private_network: false
@@ -34,6 +35,7 @@ cors:
   max_age: "12h"
   options_response_status: 204
 
+#Standar JWT settings
 jwt:
   realm: "Backend API"
   timeout: "15m"
@@ -48,15 +50,28 @@ jwt:
   cookie_domain: ""
   send_authorization: true
 
+#Oauth paths, atm is hard coded, but change the paths to this
 oauth:
   provider: "https://accounts.google.com/o/oauth2/auth"
   token_provider: "https://oauth2.googleapis.com/token"
   redirect_uri: "https://backend-template-production.up.railway.app/OAuthCallback"
 
+#Amount of request per IP and when to update them.
 rate:
-  max_request: 5
+  max_request: 50
   reset_interval: 2m
 
+logger:
+  path: "tmp/test.log" #Path where the file is located
+  level: "info" #Which level would be filtrated, levels = debug, info, warn, error
+  max_size: 200 #Size in MB
+  max_age: 7 #Numbers of days in storage
+  max_backups: 4 #Number of backups allowed
+  local_time: true #False = UTC, true = machine zone.
+  compress: false #If this should compress the logs
+  source: false #DEBUG info for leaving the entrypoint for a logging action
+
+#Mail, quite simple, add a provider, and the mail that would send the emails
 mail:
   provider: "smtp.mailgun.org"
   user: "MailTest@sandbox3559960e87ba466eb56a024ece83cb47.mailgun.org"

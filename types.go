@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"time"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -80,6 +79,17 @@ type Mail_settings struct {
 	User				string				`yaml:"user"` //NOTE, THIS MAY NEED CHANGE WHEN USING different emails, ex: support@company and RRHH@company
 }
 
+type Logger_settings struct {
+	Path				string				`yaml:"path"`
+	Level				string				`yaml:"level"`
+	MaxSize				int					`yaml:"max_size"`
+	MaxAge				int					`yaml:"max_age"`
+	MaxBackups			int					`yaml:"max_backups"`
+	LocalTime			bool				`yaml:"local_time"`
+	Compress			bool				`yaml:"compress"`
+	Source				bool				`yaml:"source"`
+}
+
 type Settings struct {
 	Release_mode		string				`yaml:"release_mode"`
 	Frontend			string				`yaml:"frontend"`
@@ -90,6 +100,7 @@ type Settings struct {
 	OAuth				OAuth_settings		`yaml:"oauth"`
 	Limiter				Rate_limits			`yaml:"rate"`
 	Mail				Mail_settings		`yaml:"mail"`
+	Logger				Logger_settings		`yaml:"logger"`
 
 	// injected from .env
 

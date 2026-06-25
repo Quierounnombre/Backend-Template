@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+
 	"gopkg.in/gomail.v2"
 )
 
@@ -13,7 +14,7 @@ func Send_Mail(s *Settings, m *gomail.Message) error {
 	d := gomail.NewDialer(s.Mail.Provider, 587, s.Mail.User, s.Mail_key)
 	err := d.DialAndSend(m)
 	if err != nil {
-		log.Printf("failed to send email to %v: %v", m.GetHeader("To"), err)
+		slog.Error("email send failed", "err", err)
 		return err
 	}
 	return nil

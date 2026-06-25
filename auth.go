@@ -6,7 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -193,6 +193,7 @@ func handleOAuthSuccess(
 	if authMiddleware.LoginResponse != nil {
 		authMiddleware.LoginResponse(c, token)
 	}
+	slog.Info("oauth login", "provider", "google", "user_id", user.UserID)
 	return nil
 }
 
@@ -247,6 +248,7 @@ func Pass_Auth(
 		if authMiddleware.LoginResponse != nil {
 			authMiddleware.LoginResponse(c, token)
 		}
+		slog.Info("password login", "user_id", user.UserID)
 	}
 }
 
@@ -281,13 +283,13 @@ func Pass_Singup(
 		user.Name = req.Name
 		id, err := create_a_2FA(db, &user, req.Password)
 		if err != nil {
-			log.Printf("Failed 2FA %s = %v", req.Email, err.Error())
+			slog.Warn("2FA creating user", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		err = TwoFA_Mail(s, db, req.Email, id)
 		if err != nil {
-			log.Printf("Failed sending email(%s) = %v", req.Email, err.Error())
+			slog.Warn("2FA sending email", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
@@ -307,31 +309,31 @@ func Validate_2FA(
 		id := c.Param("id")
 		db_email, err = Get2FA(db, id)
 		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			slog.Warn("2FA getting 2fa_pending", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return 
 		}
 		_, err = GetUser(db, db_email)
 		if err != pgx.ErrNoRows {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			slog.Warn("2FA user may exists", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		err = Move_2FA_to_users(db, id)
 		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			slog.Warn("2FA moving users", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		err = delete_a_2FA(db, id)
 		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			slog.Warn("2FA deleting users", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		user, err := GetUser(db, db_email)
 		if err != nil {
-			log.Printf("Failed 2FA %s = %v", db_email, err.Error())
+			slog.Warn("2FA getting user", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
@@ -346,6 +348,7 @@ func Validate_2FA(
 		if authMiddleware.LoginResponse != nil {
 			authMiddleware.LoginResponse(c, token)
 		}
+		slog.Info("user registered", "user_id", user.UserID)
 		c.JSON(200, gin.H{"logged:": "YES"})
 	}
 }

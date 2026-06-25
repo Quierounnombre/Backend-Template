@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"time"
 	"errors"
 	"github.com/google/uuid"
@@ -15,7 +16,7 @@ func create_password_reset_table(db *Db_data) {
 	CREATE TABLE IF NOT EXISTS reset_pass (
 		id TEXT PRIMARY KEY,
 		email TEXT UNIQUE NOT NULL,
-		time TIMESTAMPTZ DEFAULT NOW()
+		created_at TIMESTAMPTZ DEFAULT NOW()
 	);`
 	ctx, cancel := db.ctx()
 	defer cancel()
@@ -38,9 +39,10 @@ func cleanup_password_reset_table(db *Db_data) {
 		ctx, cancel := db.ctx()
 		_, err := db.pool.Exec(ctx, sql, D_Reset_pass_time.String())
 		if err != nil {
-			log.Fatalf("error at checking table: %s", err.Error())
+			slog.Error("Cleaning pass reset", "err", err)
 		}
 		cancel()
+		slog.Info("Cleaned password reset")
 	}
 }
 

@@ -11,6 +11,7 @@ func main() {
 
 
 	load_settings_from_env(&set)
+	set_logger(&set)
 	gin.SetMode(set.Release_mode) //Needs to be before creating a engine
 	Set_db(&set, &db)
 	defer db.pool.Close()
