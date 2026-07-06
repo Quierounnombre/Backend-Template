@@ -25,6 +25,7 @@ Built around the assumption that an email is all you need for building a product
 | **Config** | `config.yaml` for non-sensitive settings, `.env` for secrets |
 | **Infra** | Dockerfile + Docker Compose |
 | **Logging** | Log rotations, storage, compresion included |
+| **Templates** | Email templates for customizing your brand |
 
 
 > **On rate limiting at scale:** IP-based limiting will eventually lead to false-positives on shared IPs (offices, proxies). Fine for an MVP, and even <100 users/day. plan to swap it out before you're big enough to care.
@@ -81,7 +82,7 @@ You're starting a new backend, you need auth wired up fast, without debugging JW
 
 When **not** to use this: 
 - If you don't need user accounts, this is overkill.
-- You are at huge scales, many small decisions are made on the assumptions are based on low user counts, this may require tuning in **MAIL** & **RATE LIMITER**
+- You are at huge scales, many small decisions are made on the assumptions that you will have low user counts, this may require tuning in **MAIL** & **RATE LIMITER**
 - You like dolphins
 
 ## Need help?
