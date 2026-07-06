@@ -1,10 +1,18 @@
 package main
 
 import (
+	"bytes"
+	"embed"
+	"html/template"
 	"log/slog"
-
 	"gopkg.in/gomail.v2"
 )
+
+// DON'T REMOVE THE UNDERLAYING COMMENT
+
+//go:embed templates/*.html
+var templateFS	embed.FS
+var tmpls		*template.Template
 
 // May need hardening when sending emails, could be abuse to launch 10x
 
@@ -31,7 +39,11 @@ func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
 	if err != nil {
 		return err
 	}
-	m.SetBody("text/html", resetPasswordHTML(s.Frontend + "/reset_pass_new/" + id))
+	str, err := resetPasswordHTML(s.Frontend + "/reset_pass_new/" + id)
+	if err != nil {
+		return err
+	}
+	m.SetBody("text/html", str)
 	err = Send_Mail(s, m)
 	if err != nil {
 		return err
@@ -39,15 +51,15 @@ func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
 	return nil
 }
 
-func resetPasswordHTML(link string) string {
-	return (`<html>
-		<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-			<h2>Cambiar contraseña</h2>
-			<p>Pulsa el boton para cambiar tu contraseña.</p>
-			<a href="` + link + `" style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px">Cambiar contraseña</a>
-			<p style="color:#999;font-size:12px;margin-top:20px">En caso de no haberlo solicitado, ponte en contacto con nosotros.</p>
-		</body>
-	</html>`)
+func resetPasswordHTML(link string) (string, error) {
+	var buf		bytes.Buffer
+	var err		error
+
+	err = tmpls.ExecuteTemplate(&buf, "reset_pass.html", struct{ Link string }{ link })
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func TwoFA_Mail(s *Settings, db *Db_data, target string, id string) error {
@@ -57,7 +69,11 @@ func TwoFA_Mail(s *Settings, db *Db_data, target string, id string) error {
 	m.SetHeader("From", s.Mail.User)
 	m.SetHeader("To", target)
 	m.SetHeader("Subject", "Doble factor de autentificación")
-	m.SetBody("text/html", TwoFAHTML(s.Frontend + "/2FA_validate/" + id))
+	str, err := TwoFAHTML(s.Frontend + "/2FA_validate/" + id)
+	if err != nil {
+		return err
+	}
+	m.SetBody("text/html", str)
 	err = Send_Mail(s, m)
 	if err != nil {
 		return err
@@ -65,13 +81,13 @@ func TwoFA_Mail(s *Settings, db *Db_data, target string, id string) error {
 	return nil
 }
 
-func TwoFAHTML(link string) string {
-	return (`<html>
-		<body style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-			<h2>Doble factor de autentificación</h2>
-			<p>Haz click en el boton para terminar de registrarte.</p>
-			<a href="` + link + `" style="display:inline-block;padding:12px 24px;background:#000;color:#fff;text-decoration:none;border-radius:6px">Registrarme</a>
-			<p style="color:#999;font-size:12px;margin-top:20px">En caso de no haberlo solicitado, ponte en contacto con nosotros.</p>
-		</body>
-	</html>`)
+func TwoFAHTML(link string) (string, error) {
+	var buf		bytes.Buffer
+	var err		error
+
+	err = tmpls.ExecuteTemplate(&buf, "2FA_validate.html", struct{ Link string }{ link })
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

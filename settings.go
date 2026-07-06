@@ -1,7 +1,9 @@
 package main
 
 import (
+	"html/template"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -104,7 +106,13 @@ func Set_RateLimiter(s *Settings) *RateLimiter {
 	return (&rl)
 }
 
+func load_templates() {
+	tmpls = template.Must(template.ParseFS(templateFS, "templates/*.html"))
+	slog.Info("Loaded templates", "size: ", len(tmpls.Templates()))
+}
+
 func Set_gin(s *Settings, db *Db_data) *gin.Engine {
+	load_templates()
 	Middleware := Set_JWT(s)
 	store := cookie.NewStore([]byte(s.Session_key))
 	config := Set_cors_config(s)
