@@ -98,7 +98,7 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 		oauth_cookies = sessions.Default(c)
 		state, ok = oauth_cookies.Get("state").(string)
 		if !ok {
-			c.JSON(400, gin.H{"error in assertion": err.Error()})
+			c.JSON(400, gin.H{"error in assertion": "couldn't get cookies"})
 			return
 		}
     	oauth_cookies.Delete("state")
@@ -147,6 +147,8 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 			c.JSON(400, gin.H{"error": "Missing id token"})
 			return
 		}
+		//TODO: Add a defense in depth for OAuth.
+		//Asuming atm that everything that comes is true, only accepted from google, so it is "safe"
 		jwt_token, _, err = parser.ParseUnverified(id_token, jwt.MapClaims{})
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
@@ -193,7 +195,7 @@ func handleOAuthSuccess(
 	if authMiddleware.LoginResponse != nil {
 		authMiddleware.LoginResponse(c, token)
 	}
-	slog.Info("oauth login", "provider", "google", "user_id", user.UserID)
+	slog.Info("oauth login", "provider", provider, "user_id", user.UserID)
 	return nil
 }
 
@@ -315,7 +317,12 @@ func Validate_2FA(
 		}
 		_, err = GetUser(db, db_email)
 		if err != pgx.ErrNoRows {
-			slog.Warn("2FA user may exists", "err", err)
+			slog.Warn("2FA user exists", "err", err)
+			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
+			return
+		}
+		if err != nil {
+			slog.Warn("DB error validating 2FA", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
