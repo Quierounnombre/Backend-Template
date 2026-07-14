@@ -72,6 +72,8 @@ type OAuth_settings struct {
 	Provider			string				`yaml:"provider"`
 	Redirect_uri		string				`yaml:"redirect_uri"`
 	Token_provider		string				`yaml:"token_provider"`
+	Issuer_url			string				`yaml:"issuer_url"`
+	JKWS				string				`yaml:"jwks"`
 }
 
 type Mail_settings struct {

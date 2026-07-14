@@ -3,7 +3,11 @@
 #This needs to be a string stating with :
 port: ":8080"
 release_mode: "debug" #switch to "release" in prod
-frontend: "https://localhost:8080" #Your frontend path(for OAuth)
+frontend: "http://localhost:8080" #Your frontend path(for OAuth)
+# It is important that this url and your APIs match.
+# ex: backend:  http://yourdomain/user/profile
+# ex: frontend: http://yourdomain/user/profile
+# if they don't match, well, don't expect things to work...
 
 db:
   max_cons: 4 #Max simultaneous cons
@@ -25,7 +29,7 @@ cors:
   allow_websockets: false
   allow_files: false
   allow_origins:
-    - "https://backend-template-production.up.railway.app"
+    - "http://localhost:8080"
   allow_methods:
     - "GET"
     - "POST"
@@ -51,10 +55,15 @@ jwt:
   send_authorization: true
 
 #Oauth paths, atm is hard coded, but change the paths to this
+# https://accounts.google.com/.well-known/openid-configuration
+# usefull data for setting google
 oauth:
   provider: "https://accounts.google.com/o/oauth2/auth"
   token_provider: "https://oauth2.googleapis.com/token"
-  redirect_uri: "https://backend-template-production.up.railway.app/OAuthCallback"
+  redirect_uri: "http://localhost:8080/OAuthCallback"
+  issuer_url: "https://accounts.google.com"
+  jwks: "https://www.googleapis.com/oauth2/v3/certs"
+
 
 #Amount of request per IP and when to update them.
 rate:

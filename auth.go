@@ -16,10 +16,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/MicahParks/keyfunc/v3"
 )
 
 //JWT MANUAL: https://pkg.go.dev/github.com/golang-jwt/jwt/v5#section-documentation
 //HOLY BIBLE: https://developers.google.com/identity/protocols/oauth2/web-server#httprest_1
+
+var JWKS keyfunc.Keyfunc // init once at startup
+
 
 //ADD STATE TOKEN
 func generate_state_token() string {
@@ -61,19 +65,18 @@ func OAuthLogin(s *Settings) gin.HandlerFunc {
 	}
 }
 
-func oauthcallback_url_with_query(s *Settings, code string) (*url.URL, error) {
+func oauthcallback_url_with_query(s *Settings, code string) (*url.URL, url.Values, error) {
 	u, err := url.Parse(s.OAuth.Token_provider)
 	if err != nil {
-		return u, err
+		return nil, nil, err
 	}
-	q := u.Query()
-	q.Set("client_id", s.Client_id)
-	q.Set("client_secret", s.Client_secret)
-	q.Set("code", code)
-	q.Set("grant_type", "authorization_code")
-	q.Set("redirect_uri", s.OAuth.Redirect_uri)
-	u.RawQuery = q.Encode()
-	return u, nil
+	form := url.Values{}
+	form.Set("client_id", s.Client_id)
+	form.Set("client_secret", s.Client_secret)
+	form.Set("code", code)
+	form.Set("grant_type", "authorization_code")
+	form.Set("redirect_uri", s.OAuth.Redirect_uri)
+	return u, form, nil
 }
 
 func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddleware) gin.HandlerFunc {
@@ -89,7 +92,6 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 		var resp			*http.Response
 		var body			map[string]interface{}
 		var decoder			*json.Decoder
-		var parser			jwt.Parser
 		var claims			jwt.MapClaims
 		var jwt_token		*jwt.Token
 		var user			*User
@@ -121,12 +123,12 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 			c.JSON(400, gin.H{"error": "Missing auth code"})
 			return
 		}
-		token_url, err = oauthcallback_url_with_query(s, response_code)
+		token_url, form, err := oauthcallback_url_with_query(s, response_code)
 		if err != nil {
 			c.JSON(400, gin.H{"error in response": err.Error()})
 			return
 		}
-		resp, err = http.Post(token_url.String(), "", nil)
+		resp, err = http.PostForm(token_url.String(), form)
 		if err != nil {
 			c.JSON(400, gin.H{"error in response": err.Error()})
 			return
@@ -147,11 +149,13 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 			c.JSON(400, gin.H{"error": "Missing id token"})
 			return
 		}
-		//TODO: Add a defense in depth for OAuth.
-		//Asuming atm that everything that comes is true, only accepted from google, so it is "safe"
-		jwt_token, _, err = parser.ParseUnverified(id_token, jwt.MapClaims{})
+		jwt_token, err = jwt.Parse(id_token, JWKS.Keyfunc,
+			jwt.WithIssuer(s.OAuth.Issuer_url),
+			jwt.WithAudience(s.Client_id),
+			jwt.WithExpirationRequired(),
+		)
 		if err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
+			c.JSON(401, gin.H{"error": "invalid token"})
 			return
 		}
 		claims, ok = jwt_token.Claims.(jwt.MapClaims)

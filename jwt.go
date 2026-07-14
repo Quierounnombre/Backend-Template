@@ -68,7 +68,7 @@ func login_response(s *Settings) func(c *gin.Context, token *core.Token) {
 	return func(c *gin.Context, token *core.Token) {
 		_, is_OAuth := c.Get("oauth_provider")
 		if is_OAuth {
-			redirectURL := fmt.Sprintf("%s/profile", s.Frontend)
+			redirectURL := fmt.Sprintf("%s/user/profile", s.Frontend)
 			c.Redirect(307, redirectURL)
 			return
 		}

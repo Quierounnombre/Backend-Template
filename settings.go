@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"context"
 
 	g_jwt "github.com/appleboy/gin-jwt/v3"
 	"github.com/gin-contrib/cors"
@@ -13,6 +14,7 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-yaml"
+	"github.com/MicahParks/keyfunc/v3"
 )
 
 func load_settings_from_env(s *Settings) {
@@ -106,6 +108,15 @@ func Set_RateLimiter(s *Settings) *RateLimiter {
 	return (&rl)
 }
 
+func initJWKS(s *Settings) {
+	k, err := keyfunc.NewDefaultCtx(context.Background(), []string{s.OAuth.JKWS})
+	if err != nil {
+		log.Fatalf("JWKS init Error:" + err.Error())
+		return
+	}
+	JWKS = k
+}
+
 func load_templates() {
 	tmpls = template.Must(template.ParseFS(templateFS, "templates/*.html"))
 	slog.Info("Loaded templates", "size: ", len(tmpls.Templates()))
@@ -114,6 +125,7 @@ func load_templates() {
 func Set_gin(s *Settings, db *Db_data) *gin.Engine {
 	load_templates()
 	Middleware := Set_JWT(s)
+	initJWKS(s)
 	store := cookie.NewStore([]byte(s.Session_key))
 	config := Set_cors_config(s)
 	rl :=  Set_RateLimiter(s)
