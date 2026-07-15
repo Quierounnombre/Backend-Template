@@ -16,7 +16,7 @@ Built around the assumption that an email is all you need for building a product
 | Area | Details |
 |---|---|
 | **Auth** | OAuth2 (Google) + password login, users can use either |
-| **JWT** | RS256 asymmetric keys, scales horizontaly and resistant to tampering |
+| **JWT** | RS256 asymmetric keys, validates and offers JWKS, scales horizontaly and resistant to tampering |
 | **2FA** | Email OTP on registration, keeps bots out without adding friction for real users |
 | **Passwords** | bcrypt hashing, reset flow included |
 | **Database** | `pgxpool` connection pooling out of the box |
@@ -40,7 +40,7 @@ Built around the assumption that an email is all you need for building a product
 - Unauthenticated endpoints don't reveal whether a user exists. This is intentional.
 - Secrets never touch `config.yaml`. If you're committing your `.env` to a production repo, that's on you.
 - OAuth and password auth share the same user model, no duplicates.
-- JWT uses an RS256 asymmetric keys, obtain the public key at `your_domain/auth/public-key`
+- JWT uses an RS256 asymmetric keys, obtain the public key in JWKS format at `your_domain/auth/public-key`
 - JWT has no revocation, for this i recomend at the moment to set a low time between token refresh(PR to fix it are accepted)
 - Your frontend needs a `reset_password_new` GET endpoint, that sends a POST to the `reset_password_new` (We don't want to leak user passwords, don't we?).
 
@@ -61,6 +61,19 @@ Configure `config.yaml` for everything else. It's commented, read it.
 
 If you want to set how often are the 2FA and the reset_password table, thats on the defines.
 
+### Validating Users from your service
+
+Do something like this in your service
+
+```go
+jwks, _ := keyfunc.NewDefaultCtx(ctx, []string{"https://yourserver.com/auth/public-key"})
+token, err := jwt.Parse(tokenString, jwks.Keyfunc, jwt.WithValidMethods([]string{"RS256"}))
+if err != nil || !token.Valid {
+	// reject
+}
+```
+
+Then just set your email templates in the templates folder, and you are good to go!
 
 ---
 
