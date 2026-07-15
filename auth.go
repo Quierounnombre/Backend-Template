@@ -17,12 +17,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/MicahParks/keyfunc/v3"
+	"github.com/MicahParks/jwkset"
 )
 
 //JWT MANUAL: https://pkg.go.dev/github.com/golang-jwt/jwt/v5#section-documentation
 //HOLY BIBLE: https://developers.google.com/identity/protocols/oauth2/web-server#httprest_1
 
-var JWKS keyfunc.Keyfunc // init once at startup
+var JWKS			keyfunc.Keyfunc // init once at startup
+var jwkStorage		jwkset.Storage
 
 
 //ADD STATE TOKEN
@@ -205,7 +207,12 @@ func handleOAuthSuccess(
 
 func Expose_pub_key(s *Settings) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.JSON(200, gin.H{"pub_key": s.Jwt_pub_key})
+		resp, err := jwkStorage.JSON(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"Error Exposing key": err.Error()})
+			return
+		}
+		c.Data(200, "application/json", resp)
 	}
 }
 

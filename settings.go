@@ -1,20 +1,22 @@
 package main
 
 import (
+	"context"
 	"html/template"
 	"log"
 	"log/slog"
 	"os"
 	"strings"
-	"context"
 
+	"github.com/MicahParks/jwkset"
+	"github.com/MicahParks/keyfunc/v3"
 	g_jwt "github.com/appleboy/gin-jwt/v3"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-yaml"
-	"github.com/MicahParks/keyfunc/v3"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func load_settings_from_env(s *Settings) {
@@ -108,13 +110,36 @@ func Set_RateLimiter(s *Settings) *RateLimiter {
 	return (&rl)
 }
 
-func initJWKS(s *Settings) {
+func initJWKS_client(s *Settings) {
 	k, err := keyfunc.NewDefaultCtx(context.Background(), []string{s.OAuth.JKWS})
 	if err != nil {
 		log.Fatalf("JWKS init Error:" + err.Error())
-		return
 	}
 	JWKS = k
+}
+
+func initJWKS_server(s *Settings) {
+	rsaPub, err := jwt.ParseRSAPublicKeyFromPEM([]byte(s.Jwt_pub_key))
+	if err != nil {
+		log.Fatalf("Error reading public key: " + err.Error())
+	}
+	options := jwkset.JWKOptions {
+		Marshal: jwkset.JWKMarshalOptions{Private: false},
+		Metadata: jwkset.JWKMetadataOptions{
+			KID: "Calatayud",
+			ALG: jwkset.AlgRS256,
+			USE: jwkset.UseSig,
+		},
+	}
+	jwk, err := jwkset.NewJWKFromKey(rsaPub, options)
+	if err != nil {
+		log.Fatalf("Error creating jwkstorage: " + err.Error())
+	}
+	jwkStorage = jwkset.NewMemoryStorage()
+	err = jwkStorage.KeyWrite(context.Background(), jwk)
+	if err != nil {
+		log.Fatalf("Error writing into storage: " + err.Error())
+	}
 }
 
 func load_templates() {
@@ -125,7 +150,8 @@ func load_templates() {
 func Set_gin(s *Settings, db *Db_data) *gin.Engine {
 	load_templates()
 	Middleware := Set_JWT(s)
-	initJWKS(s)
+	initJWKS_client(s)
+	initJWKS_server(s)
 	store := cookie.NewStore([]byte(s.Session_key))
 	config := Set_cors_config(s)
 	rl :=  Set_RateLimiter(s)
