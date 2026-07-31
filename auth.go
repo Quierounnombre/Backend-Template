@@ -10,14 +10,15 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/MicahParks/jwkset"
+	"github.com/MicahParks/keyfunc/v3"
 	g_jwt "github.com/appleboy/gin-jwt/v3"
 	"github.com/appleboy/gin-jwt/v3/core"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
-	"github.com/MicahParks/keyfunc/v3"
-	"github.com/MicahParks/jwkset"
+	validator "github.com/wagslane/go-password-validator"
 )
 
 //JWT MANUAL: https://pkg.go.dev/github.com/golang-jwt/jwt/v5#section-documentation
@@ -291,6 +292,10 @@ func Pass_Singup(
 		if req.Password == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing password"})
 			return
+		}
+		err = validator.Validate(req.Password, s.Password.min_entropy)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 		user.Email = req.Email
 		user.Name = req.Name

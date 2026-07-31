@@ -85,3 +85,9 @@ logger:
 mail:
   provider: "smtp.mailgun.org"
   user: "MailTest@sandbox3559960e87ba466eb56a024ece83cb47.mailgun.org"
+
+password:
+  #Password based on min entropy needed, that means that you are setting how hard would be to break the password,
+  #rather than if it contains a mayus, or a @# sign, or similars.
+  # More info: https://pkg.go.dev/github.com/wagslane/go-password-validator#section-readme
+  min_entropy: 80.0

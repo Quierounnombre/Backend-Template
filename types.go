@@ -92,6 +92,10 @@ type Logger_settings struct {
 	Source				bool				`yaml:"source"`
 }
 
+type Password_settings struct {
+	min_entropy			float64				`yaml:"min_entropy"`
+}
+
 type Settings struct {
 	Release_mode		string				`yaml:"release_mode"`
 	Frontend			string				`yaml:"frontend"`
@@ -103,6 +107,7 @@ type Settings struct {
 	Limiter				Rate_limits			`yaml:"rate"`
 	Mail				Mail_settings		`yaml:"mail"`
 	Logger				Logger_settings		`yaml:"logger"`
+	Password			Password_settings	`yaml:"password"`
 
 	// injected from .env
 
