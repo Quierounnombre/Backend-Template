@@ -230,7 +230,7 @@ func Expose_pub_key(s *Settings) gin.HandlerFunc {
 	}
 }
 
-func Pass_Auth(
+func PassLogin(
 	db				*Db_data,
 	authMiddleware	*g_jwt.GinJWTMiddleware,
 ) gin.HandlerFunc {
@@ -243,31 +243,37 @@ func Pass_Auth(
 
 		err = c.ShouldBindJSON(&req)
 		if err != nil {
+			slog.Info("bind failed", "err", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
 		if req.Email == "" {
+			slog.Info("missing email", "err", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
 			return
 		}
 		match, err = CheckUserPassword(db, req)
 		if err != nil {
+			//Loggin already done in check user password
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Error checking password"})
 			return
 		}
 		if match == false {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Password don't match"})
+			slog.Warn("User password don't match", "user", req.Email)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Password don't match"})
 			return
 		}
 		user, err = GetUser(db, req.Email)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			slog.Error("Couldn't retrieve user from DB", "err", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		c.Set(authMiddleware.IdentityKey, user)
 		token, err = authMiddleware.TokenGenerator(c.Request.Context(), user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			slog.Error("Couldn't generate a JWT", "err", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		authMiddleware.SetCookie(c, token.AccessToken)
@@ -291,39 +297,45 @@ func Pass_Singup(
 
 		err = c.ShouldBindJSON(&req)
 		if err != nil {
+			slog.Info("bind failed", "err", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 			return
 		}
 		if req.Email == "" {
+			slog.Info("missing mail", "err", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
 			return
 		}
 		if req.Name == "" {
+			slog.Info("missing name", "err", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing name"})
 			return
 		}
 		if req.Password == "" {
+			slog.Info("missing password", "err", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing password"})
 			return
 		}
 		err = validator.Validate(req.Password, s.Password.min_entropy)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			slog.Info("Weak Password", "err", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		user.Email = req.Email
 		user.Name = req.Name
 		id, err := create_a_2FA(db, &user, req.Password)
 		if err != nil {
-			slog.Warn("2FA creating user", "err", err)
+			slog.Error("2FA creating user", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		err = TwoFA_Mail(s, db, req.Email, id)
 		if err != nil {
-			slog.Warn("2FA sending email", "err", err)
+			slog.Error("2FA sending email", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
+		slog.Info("sended 2FA email", "email", user.Email)
 		c.JSON(200, gin.H{"result": "Check your email"})
 	}
 }

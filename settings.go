@@ -72,7 +72,7 @@ func Set_endpoints(
 ) {
 	eng.GET("/OAuthLogin", OAuthLogin(s))
 	eng.GET("/OAuthCallback", OAuthCallback(s, db, handle))
-	eng.POST("/PassLogin", Pass_Auth(db, handle))
+	eng.POST("/PassLogin", PassLogin(db, handle))
 	eng.POST("/PassSingup", Pass_Singup(s, db, handle))
 	eng.GET("/2FA_validate/:id", Validate_2FA(s, db, handle))
 	eng.POST("/PassReset", ResetPass(s, db))

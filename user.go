@@ -110,6 +110,7 @@ func StorePassSimple(db *Db_data, pass string, email string, table string) error
 	return err
 }
 
+//Checks if the user exist, and the password is the correct one
 func CheckUserPassword(db *Db_data, req LoginRequest) (bool, error) {
 	var pass_hash	string
 	var err			error
@@ -124,13 +125,16 @@ func CheckUserPassword(db *Db_data, req LoginRequest) (bool, error) {
 	row = db.pool.QueryRow(ctx, sql, req.Email)
 	err = row.Scan(&pass_hash)
 	if err != nil {
+		slog.Warn("User not existing in DB", "err", err, "user", req.Email)
 		return false, err
 	}
 	if pass_hash == "" {
+		slog.Info("User exist as OAuth user", "err", err, "user", req.Email)
 		return false, err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(pass_hash), []byte(req.Password))
 	if err != nil {
+		slog.Error("Error at comparing hashes", "err", err)
 		return false, err
 	}
 	return true, err
