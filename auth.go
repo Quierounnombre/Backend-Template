@@ -57,13 +57,17 @@ func OAuthLogin(s *Settings) gin.HandlerFunc {
 		oauth_cookies.Set("state", state)
 		err := oauth_cookies.Save()
 		if err != nil {
-			c.JSON(400, gin.H{"error saving cookies": err.Error()})
+			slog.Error("oauth login: session save failed", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error saving cookies": err.Error()})
 			return
 		}
 		auth_url, err := oauthlogin_url_with_query(s, state)
 		if err != nil {
-			c.JSON(400, gin.H{"Error obtaining url": err.Error()})
+			slog.Error("oauth login: auth url generation failed", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"Error generating redirect url": err.Error()})
+			return
 		}
+		//Should need login attemp tracing
 		c.Redirect(307, auth_url.String())
 	}
 }
@@ -86,7 +90,7 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 	return func(c *gin.Context) {
 		var state			string
 		var response_state	string
-		var response_code	string
+		var s_oauth_code	string
 		var id_token		string
 		var err				error
 		var ok				bool
@@ -103,13 +107,14 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 		oauth_cookies = sessions.Default(c)
 		state, ok = oauth_cookies.Get("state").(string)
 		if !ok {
-			c.JSON(400, gin.H{"error in assertion": "couldn't get cookies"})
+			c.JSON(400, gin.H{"error": "missing state"})
 			return
 		}
     	oauth_cookies.Delete("state")
 		err = oauth_cookies.Save()
 		if err != nil {
-			c.JSON(400, gin.H{"error saving cookies": err.Error()})
+			slog.Error("oauth callback: session save failed", "error", err)
+			c.JSON(500, gin.H{"error saving cookies": err.Error()})
 			return
 		}
 		response_state = c.Query("state")
@@ -121,35 +126,40 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 			c.JSON(400, gin.H{"error": "mismatch state token"})
 			return
 		}
-		response_code = c.Query("code")
-		if response_code == "" {
+		s_oauth_code = c.Query("code")
+		if s_oauth_code == "" {
 			c.JSON(400, gin.H{"error": "Missing auth code"})
 			return
 		}
-		token_url, form, err := oauthcallback_url_with_query(s, response_code)
+		token_url, form, err := oauthcallback_url_with_query(s, s_oauth_code)
 		if err != nil {
-			c.JSON(400, gin.H{"error in response": err.Error()})
+			slog.Error("oauth callback: token url generation failed", "error", err)
+			c.JSON(500, gin.H{"error in response": err.Error()})
 			return
 		}
 		resp, err = http.PostForm(token_url.String(), form)
 		if err != nil {
-			c.JSON(400, gin.H{"error in response": err.Error()})
+			slog.Error("oauth callback: token exchange request failed", "error", err)
+			c.JSON(502, gin.H{"error in response": err.Error()})
 			return
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			c.JSON(400, gin.H{"error": "bad status code"})
+			slog.Error("oauth callback: bad status from provider", "status", resp.StatusCode)
+			c.JSON(502, gin.H{"error": "bad status code"})
 			return
 		}
 		decoder = json.NewDecoder(resp.Body)
 		err = decoder.Decode(&body)
 		if err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
+			slog.Error("oauth callback: can't decode the body", "error", err)
+			c.JSON(502, gin.H{"error": err.Error()})
 			return
 		}
 		id_token, ok = body["id_token"].(string)
 		if !ok {
-			c.JSON(400, gin.H{"error": "Missing id token"})
+			slog.Error("missing id_token in body")
+			c.JSON(502, gin.H{"error": "Missing id token"})
 			return
 		}
 		jwt_token, err = jwt.Parse(id_token, JWKS.Keyfunc,
@@ -158,12 +168,13 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 			jwt.WithExpirationRequired(),
 		)
 		if err != nil {
-			c.JSON(401, gin.H{"error": "invalid token"})
+			c.JSON(502, gin.H{"error": "invalid token"})
 			return
 		}
 		claims, ok = jwt_token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.JSON(400, gin.H{"error": "Missing claims"})
+			slog.Error("missing jwt_claims")
+			c.JSON(502, gin.H{"error": "Missing claims"})
 			return
 		}
 		storage_data.Name = fmt.Sprintf("%v", claims["given_name"])
@@ -171,12 +182,14 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 		storage_data.Picture = fmt.Sprintf("%v", claims["picture"])
 		user, err = Login_or_ADD_User(db, &storage_data)
 		if err != nil {
-			c.JSON(400, gin.H{"Error creating user": err.Error()})
+			slog.Error("oauth callback: login or add user failed", "email", storage_data.Email, "error", err)
+			c.JSON(500, gin.H{"Error creating user": err.Error()})
 			return
 		}
 		err = handleOAuthSuccess(c, authMiddleware, user, "google")
 		if err != nil {
-			c.JSON(400, gin.H{"Error authenticating user": err.Error()})
+			slog.Error("oauth callback: session issuance failed", "email", storage_data.Email, "error", err)
+			c.JSON(500, gin.H{"Error authenticating user": err.Error()})
 			return
 		}
 	}
@@ -202,7 +215,7 @@ func handleOAuthSuccess(
 	if authMiddleware.LoginResponse != nil {
 		authMiddleware.LoginResponse(c, token)
 	}
-	slog.Info("oauth login", "provider", provider, "user_id", user.UserID)
+	slog.Info("oauth callback success", "provider", provider, "user_id", user.UserID)
 	return nil
 }
 
