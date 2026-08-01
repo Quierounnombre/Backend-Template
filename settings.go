@@ -150,6 +150,7 @@ func load_templates() {
 func Set_gin(s *Settings, db *Db_data) *gin.Engine {
 	load_templates()
 	Middleware := Set_JWT(s)
+	init_mail(s)
 	initJWKS_client(s)
 	initJWKS_server(s)
 	store := cookie.NewStore([]byte(s.Session_key))

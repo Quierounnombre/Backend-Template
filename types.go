@@ -4,8 +4,10 @@ import (
 	"context"
 	"sync"
 	"time"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"gopkg.in/gomail.v2"
 )
 
 //----------------------------------------------------------------------------------------------SETTINGS
@@ -79,6 +81,14 @@ type OAuth_settings struct {
 type Mail_settings struct {
 	Provider			string				`yaml:"provider"`
 	User				string				`yaml:"user"` //NOTE, THIS MAY NEED CHANGE WHEN USING different emails, ex: support@company and RRHH@company
+	queue_size			int					`yaml:"queue_size"`
+	max_workers			int					`yaml:"max_workers"`
+	min_workers			int					`yaml:"min_workers"`
+	worker_per_qeueu	int					`yaml:"worker_per_queue"`
+	sleep_time			time.Duration		`yaml:"sleep_time"`
+	dialer				*gomail.Dialer
+	queue				chan *gomail.Message
+	retry_queue			chan *gomail.Message
 }
 
 type Logger_settings struct {
