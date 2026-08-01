@@ -14,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
+	validator "github.com/wagslane/go-password-validator"
 )
 
 func create_table_user(db *Db_data) {
@@ -181,7 +182,7 @@ func EraseUser(db *Db_data) gin.HandlerFunc {
 		claims = g_jwt.ExtractClaims(c)
 		email = claims["email"].(string)
 		if email == "" {
-			c.JSON(400, gin.H{"Error:": " retrieving claims from jwt"})
+			c.JSON(401, gin.H{"Error:": " retrieving claims from jwt"})
 			return
 		}
 		ctx, cancel = db.ctx()
@@ -205,11 +206,13 @@ func GetProfile(db *Db_data) gin.HandlerFunc {
 		claims = g_jwt.ExtractClaims(c)
 		email = claims["email"].(string)
 		if email == "" {
-			c.JSON(400, gin.H{"Error:": " retrieving claims from jwt"})
+			slog.Error("JWT missing email field", "err", err)
+			c.JSON(401, gin.H{"Error:": " retrieving claims from jwt"})
 			return
 		}
 		user, err = GetUser(db, email)
 		if err != nil {
+			slog.Error("User dosen't exist", "err", err)
 			c.JSON(500, gin.H{"Error:": " obtaining user from db"})
 			return
 		}
@@ -230,22 +233,25 @@ func ResetPass(s *Settings, db *Db_data) gin.HandlerFunc {
 
 		err = c.ShouldBindJSON(&body)
 		if err != nil {
+			slog.Warn("Missing body on a resetpass request", "err", err)
 			c.JSON(400, gin.H{"Error:": " Invalid content"})
 			return 
 		}
 		if body.Email == "" {
+			slog.Warn("Missing email on a resetpass request", "err", err)
 			c.JSON(400, gin.H{"Error:": " Missing email"})
 			return
 		}
 		_, err = GetUser(db, body.Email)
 		if err != nil {
 			//NOT LEAKING WHICH EMAILS EXIST
-			slog.Warn("Someone tryed to moddify the password for an account that dosent exist")
+			slog.Warn("Someone tryed to moddify the password for an account that dosent exist", "err", err)
 			c.JSON(200, gin.H{"result": "Check your email"})
 			return
 		}
 		err = Mail_Reset_Pass(s, db, body.Email)
 		if err != nil {
+			slog.Error("Couldn't send the reset_pass_mail", "err", err)
 			c.JSON(500, gin.H{"Error": err.Error()})
 			return
 		}
@@ -264,14 +270,17 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 
 		err = c.ShouldBindJSON(&body)
 		if err != nil {
+			slog.Warn("Missing body on a resetpasssend request", "err", err)
 			c.JSON(400, gin.H{"Error:": " Invalid content"})
 			return 
 		}
 		if body.Email == "" {
+			slog.Warn("Missing email", "err", err)
 			c.JSON(400, gin.H{"Error:": " Missing email"})
 			return
 		}
 		if body.NewPass == "" {
+			slog.Warn("Missing newpass", "err", err)
 			c.JSON(400, gin.H{"Error:": " Missing password"})
 			return
 		}
@@ -284,8 +293,14 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 		}
 		if db_email != body.Email {
 			slog.Warn("password reset email mismatch")
-			c.JSON(500, gin.H{"Error:": " Error updating password"})
+			c.JSON(400, gin.H{"Error:": " Error updating password"})
 			return 
+		}
+		err = validator.Validate(body.NewPass, s.Password.min_entropy)
+		if err != nil {
+			slog.Info("Weak new Password", "err", err)
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
 		}
 		err = StorePass(db, body.NewPass, body.Email, "users")
 		if err != nil {
@@ -299,7 +314,7 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 			c.JSON(500, gin.H{"Error:": " Error updating password"})
 			return
 		}
-		slog.Info("password reset successful")
+		slog.Info("password reset successful for ", "email", body.Email)
 		c.JSON(200, gin.H{"Success": "Password updated"})
 	}
 }

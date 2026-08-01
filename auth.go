@@ -223,7 +223,8 @@ func Expose_pub_key(s *Settings) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		resp, err := jwkStorage.JSON(c.Request.Context())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"Error Exposing key": err.Error()})
+			slog.Error("Error providing public key", "err", err)
+			c.JSON(500, gin.H{"Error Exposing key": err.Error()})
 			return
 		}
 		c.Data(200, "application/json", resp)
@@ -320,6 +321,7 @@ func Pass_Singup(
 		if err != nil {
 			slog.Info("Weak Password", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return 
 		}
 		user.Email = req.Email
 		user.Name = req.Name
@@ -352,43 +354,44 @@ func Validate_2FA(
 		id := c.Param("id")
 		db_email, err = Get2FA(db, id)
 		if err != nil {
-			slog.Warn("2FA getting 2fa_pending", "err", err)
+			slog.Error("Can't retrieve pending 2FA", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return 
 		}
 		_, err = GetUser(db, db_email)
 		if err != pgx.ErrNoRows {
-			slog.Warn("2FA user exists", "err", err)
+			slog.Error("User already exists", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		if err != nil {
-			slog.Warn("DB error validating 2FA", "err", err)
+			slog.Error("Error retrieving user", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		err = Move_2FA_to_users(db, id)
 		if err != nil {
-			slog.Warn("2FA moving users", "err", err)
+			slog.Error("Error moving 2FA to users", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		err = delete_a_2FA(db, id)
 		if err != nil {
-			slog.Warn("2FA deleting users", "err", err)
+			slog.Error("Error deleting 2FA user", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		user, err := GetUser(db, db_email)
 		if err != nil {
-			slog.Warn("2FA getting user", "err", err)
+			slog.Error("Error obtaining user", "err", err)
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
 		c.Set(authMiddleware.IdentityKey, user)
 		token, err := authMiddleware.TokenGenerator(c.Request.Context(), user)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			slog.Error("Couldn't generate a JWT", "err", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		authMiddleware.SetCookie(c, token.AccessToken)

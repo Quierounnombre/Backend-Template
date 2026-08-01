@@ -74,17 +74,17 @@ func Set_endpoints(
 	eng.GET("/OAuthCallback", OAuthCallback(s, db, handle))
 	eng.POST("/PassLogin", PassLogin(db, handle))
 	eng.POST("/PassSingup", Pass_Singup(s, db, handle))
-	eng.GET("/2FA_validate/:id", Validate_2FA(s, db, handle))
+	eng.POST("/2FA_validate/:id", Validate_2FA(s, db, handle))
 	eng.POST("/PassReset", ResetPass(s, db))
-	eng.POST("/reset_pass_new/:id", ResetPassSend(s, db))
-	eng.POST("/auth/refresh", handle.RefreshHandler)
-	eng.GET("/auth/public-key", Expose_pub_key(s))
+	eng.POST("/Reset_pass_new/:id", ResetPassSend(s, db))
+	eng.POST("/Refresh", handle.RefreshHandler)
+	eng.GET("/Public-key", Expose_pub_key(s))
 	eng.NoRoute(handle.MiddlewareFunc(), handleNoRoute())
-	auth := eng.Group("/user/", handle.MiddlewareFunc())
+	auth := eng.Group("/User/", handle.MiddlewareFunc())
 	{
-		auth.GET("/profile", GetProfile(db))
-		auth.GET("/logout", handle.LogoutHandler)
-		auth.POST("/erase_user", EraseUser(db))
+		auth.GET("/Profile", GetProfile(db))
+		auth.GET("/Logout", handle.LogoutHandler)
+		auth.DELETE("/Erase_user", EraseUser(db))
 	}
 }
 
