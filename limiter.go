@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,11 @@ func (rl *RateLimiter)Allow(client string) bool {
 
 func (rl *RateLimiter)Middleware() gin.HandlerFunc{
 	return func(c *gin.Context) {
+		//Only would exist on local testing endpoints
+		if strings.HasPrefix(c.Request.URL.Path, "/internal/") {
+			c.Next()
+			return
+		}
 		if !rl.Allow(c.ClientIP()) {
 			c.AbortWithStatus(http.StatusTooManyRequests)
 			return

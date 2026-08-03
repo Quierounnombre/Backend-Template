@@ -86,6 +86,9 @@ func Set_endpoints(
 		auth.GET("/Logout", handle.LogoutHandler)
 		auth.DELETE("/Erase_user", EraseUser(db))
 	}
+	if s.Release_mode == gin.DebugMode {
+		test_endpoints(s, eng)
+	}
 }
 
 func Set_JWT(s *Settings) *g_jwt.GinJWTMiddleware {

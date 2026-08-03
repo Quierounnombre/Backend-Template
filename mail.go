@@ -20,8 +20,8 @@ var tmpls		*template.Template
 func init_mail(s *Settings) {
 	//587 is hardcoded for the SMPT protocol
 	s.Mail.dialer = gomail.NewDialer(s.Mail.Provider, 587, s.Mail.User, s.Mail_key)
-	s.Mail.queue = make(chan *gomail.Message, s.Mail.queue_size)
-	s.Mail.retry_queue = make(chan *gomail.Message, s.Mail.queue_size)
+	s.Mail.queue = make(chan *gomail.Message, s.Mail.Queue_size)
+	s.Mail.retry_queue = make(chan *gomail.Message, s.Mail.Queue_size)
 	go s.Mail.Manager()
 }
 
@@ -50,7 +50,7 @@ func (mr *Mail_settings)run(stop chan struct{}) {
 			}
 			err := gomail.Send(s, m)
 			if err != nil {
-				time.AfterFunc(5*time.Second, func() { mr.Enqueue(m) })
+				time.AfterFunc(5*time.Second, func() { mr.Retry_Enqueue(m) })
 				slog.Error("send failed", "err", err)
 				s.Close()
 				s = nil
@@ -90,19 +90,19 @@ func (mr *Mail_settings)Manager() {
 	ex_wk = 0
 	for {
 		queue_size := len(mr.queue)
-		ex_wk = (queue_size + mr.worker_per_qeueu - 1) / mr.worker_per_qeueu
+		ex_wk = (queue_size + mr.Worker_per_qeueu - 1) / mr.Worker_per_qeueu
 		if n_workers <= ex_wk {
-			if n_workers <= mr.max_workers {
-				slog.Info("New email worker created", "Email backlog", queue_size, "ex_wk", ex_wk)
+			if n_workers <= mr.Max_workers {
+				slog.Info("Email worker created", "Email backlog", queue_size, "ex_wk", ex_wk)
 				go mr.run(stop)
 				n_workers += 1
 			}
-		} else if n_workers > mr.min_workers {
+		} else if n_workers > mr.Min_workers {
 			slog.Info("Email worker deleted", "Email backlog", queue_size, "ex_wk", ex_wk)
 			stop <- struct{}{}
 			n_workers -= 1
 		}
-		time.Sleep(mr.sleep_time)
+		time.Sleep(mr.Sleep_time)
 	}
 }
 
