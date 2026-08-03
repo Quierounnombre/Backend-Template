@@ -158,14 +158,20 @@ type SignUpRequest struct {
 
 //------------------------------------------------------------------------------------------------------LIMITER
 
+type Bucket struct {
+	tokens		uint
+}
+
 type RateLimiter struct {
 	mu			sync.Mutex
-	reqs		map[string]uint
-	Max_reqs	uint
-	Reset_time	time.Duration
+	buckets		map[string]*Bucket
+	reset_time	time.Duration
+	max			uint
+	ref_amount	uint
 }
 
 type Rate_limits struct {
 	Max_request		uint			`yaml:"max_request"`
 	Reset_time		time.Duration	`yaml:"reset_interval"`
+	Refill			uint			`yaml:"refill"`
 }

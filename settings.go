@@ -105,11 +105,12 @@ func Set_JWT(s *Settings) *g_jwt.GinJWTMiddleware {
 
 func Set_RateLimiter(s *Settings) *RateLimiter {
 	rl := RateLimiter {
-		reqs: make(map[string]uint),
-		Max_reqs: s.Limiter.Max_request,
-		Reset_time: s.Limiter.Reset_time,
+		buckets: make(map[string]*Bucket),
+		max: s.Limiter.Max_request,
+		reset_time: s.Limiter.Reset_time,
+		ref_amount: s.Limiter.Refill,
 	}
-	go rl.Cleanup()
+	go rl.Refill()
 	return (&rl)
 }
 

@@ -12,10 +12,16 @@ import (
 func (rl *RateLimiter)Allow(client string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
-	rl.reqs[client]++
-	if rl.reqs[client] > rl.Max_reqs {
+
+	b, ok := rl.buckets[client]
+	if !ok {
+		b = &Bucket{tokens: rl.max}
+		rl.buckets[client] = b
+	}
+	if b.tokens == 0 {
 		return false
 	}
+	b.tokens--
 	return true
 }
 
@@ -34,12 +40,18 @@ func (rl *RateLimiter)Middleware() gin.HandlerFunc{
 	}
 }
 
-func (rl *RateLimiter)Cleanup() {
-	ticker := time.NewTicker(rl.Reset_time)
+func (rl *RateLimiter)Refill() {
+	ticker := time.NewTicker(rl.reset_time)
 	defer ticker.Stop()
 	for range ticker.C {
 		rl.mu.Lock()
-		rl.reqs = make(map[string]uint)
+		for key, b := range rl.buckets {
+			if b.tokens > rl.max {
+				delete(rl.buckets, key)
+				continue
+			}
+			b.tokens += rl.ref_amount
+		}
 		rl.mu.Unlock()
 		slog.Info("rate limit: reset")
 	}

@@ -70,6 +70,7 @@ oauth:
 rate:
   max_request: 50
   reset_interval: 2m
+  refill: 10
 
 logger:
   path: "tmp/test.log" #Path where the file is located
