@@ -2,7 +2,8 @@
 
 #This needs to be a string stating with :
 port: ":8080"
-release_mode: "debug" #switch to "release" in prod
+release_mode: "release" #switch to "release" in prod
+#keep debug for testing
 frontend: "http://localhost:8080" #Your frontend path(for OAuth)
 # It is important that this url and your APIs match.
 # ex: backend:  http://yourdomain/user/profile
@@ -66,11 +67,11 @@ oauth:
   jwks: "https://www.googleapis.com/oauth2/v3/certs"
 
 
-#Amount of request per IP and when to update them.
+#Amount of request per IP + PATH and when to update them.
 rate:
-  max_request: 50
+  max_request: 500
   reset_interval: 2m
-  refill: 10
+  refill: 100
 
 logger:
   path: "tmp/test.log" #Path where the file is located
@@ -86,14 +87,15 @@ logger:
 mail:
   provider: "smtp.mailgun.org"
   user: "MailTest@sandbox3559960e87ba466eb56a024ece83cb47.mailgun.org"
-  queue_size: 1000
-  max_workers: 3
+  queue_size: 10000
+  max_workers: 4
   min_workers: 1
-  worker_per_queue: 100
-  sleep_time: 5m
+  worker_per_queue: 200
+  sleep_time: 2m
 
 password:
   #Password based on min entropy needed, that means that you are setting how hard would be to break the password,
+  # Between 50-70 is average, 80 is recomended.
   #rather than if it contains a mayus, or a @# sign, or similars.
   # More info: https://pkg.go.dev/github.com/wagslane/go-password-validator#section-readme
   min_entropy: 80.0

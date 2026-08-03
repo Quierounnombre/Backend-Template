@@ -164,7 +164,9 @@ func Set_gin(s *Settings, db *Db_data) *gin.Engine {
 	eng.Use(gin.Recovery())
 	eng.Use(gin.Logger())
 	eng.Use(cors.New(config))
-	eng.Use(rl.Middleware())
+	if s.Release_mode == gin.ReleaseMode {
+		eng.Use(rl.Middleware())
+	}
 	eng.Use(sessions.Sessions("state_session", store))
 	Set_endpoints(s, eng, db, Middleware)
 	return eng

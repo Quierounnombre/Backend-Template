@@ -255,8 +255,8 @@ func PassLogin(
 		}
 		match, err = CheckUserPassword(db, req)
 		if err != nil {
-			//Loggin already done in check user password
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Error checking password"})
+			//Log already done in check user password
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking password"})
 			return
 		}
 		if match == false {

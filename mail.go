@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"html/template"
 	"log/slog"
 	"time"
@@ -25,8 +26,14 @@ func init_mail(s *Settings) {
 	go s.Mail.Manager()
 }
 
-func (mr *Mail_settings)Enqueue(m *gomail.Message) {
-	mr.queue <- m
+func (mr *Mail_settings)Enqueue(m *gomail.Message) error {
+	//Added protection from heavy load from different IPs
+	select {
+		case mr.queue <- m:
+			return nil
+		default:
+			return errors.New("mail queue full")
+	}
 }
 
 func (mr *Mail_settings)Retry_Enqueue(m *gomail.Message) {
@@ -122,7 +129,10 @@ func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
 		return err
 	}
 	m.SetBody("text/html", str)
-	s.Mail.Enqueue(m)
+	err = s.Mail.Enqueue(m)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -149,7 +159,10 @@ func TwoFA_Mail(s *Settings, db *Db_data, target string, id string) error {
 		return err
 	}
 	m.SetBody("text/html", str)
-	s.Mail.Enqueue(m)
+	err = s.Mail.Enqueue(m)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
