@@ -86,6 +86,7 @@ type Mail_settings struct {
 	Min_workers			int					`yaml:"min_workers"`
 	Worker_per_qeueu	int					`yaml:"worker_per_queue"`
 	Sleep_time			time.Duration		`yaml:"sleep_time"`
+	Port				int					`yaml:"port"`
 	dialer				*gomail.Dialer
 	queue				chan *gomail.Message
 	retry_queue			chan *gomail.Message

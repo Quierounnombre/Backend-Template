@@ -87,6 +87,7 @@ logger:
 mail:
   provider: "smtp.mailgun.org"
   user: "MailTest@sandbox3559960e87ba466eb56a024ece83cb47.mailgun.org"
+  port: 587
   queue_size: 10000
   max_workers: 4
   min_workers: 1

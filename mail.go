@@ -19,8 +19,7 @@ var tmpls		*template.Template
 
 // May need hardening when sending emails, could be abuse to launch 10x
 func init_mail(s *Settings) {
-	//587 is hardcoded for the SMPT protocol
-	s.Mail.dialer = gomail.NewDialer(s.Mail.Provider, 587, s.Mail.User, s.Mail_key)
+	s.Mail.dialer = gomail.NewDialer(s.Mail.Provider, s.Mail.Port, s.Mail.User, s.Mail_key)
 	s.Mail.queue = make(chan *gomail.Message, s.Mail.Queue_size)
 	s.Mail.retry_queue = make(chan *gomail.Message, s.Mail.Queue_size)
 	go s.Mail.Manager()
