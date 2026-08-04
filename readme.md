@@ -6,6 +6,17 @@ A production-ready auth backend you can clone, configure, and deploy in about an
 
 Built around the assumption that an email is all you need for building a product and communicating with your user.
 
+---
+
+## License & Documentation
+
+MIT — free to clone, modify, and deploy in production. See [LICENSE](LICENSE).
+
+The upgraded version (multi-tenancy, admin UI, audit logging) is closed-source and available separately — reach out on LinkedIn if interested.
+
+[![Docs](https://img.shields.io/badge/docs-quierounnombre.github.io-blue)](https://quierounnombre.github.io/api/janus_api)
+
+A production-ready auth backend...
 
 ---
 
@@ -20,9 +31,9 @@ Built around the assumption that an email is all you need for building a product
 | **2FA** | Email OTP on registration, keeps bots out without adding friction for real users |
 | **Passwords** | bcrypt hashing, reset flow included |
 | **Database** | `pgxpool` connection pooling out of the box |
-| **Rate limiting** | Fixed window per IP, good enough until you're at scale, MUST be revised once scaled |
-| **Email** | Sending wired up. Works, but MUST be revised once scaled |
-| **Config** | `config.yaml` for non-sensitive settings, `.env` for secrets |
+| **Rate limiting** | Token Bucket approach per IP + Path |
+| **Email** | SMTP configured, worker + manager aproach for efficient use of resources. |
+| **Config** | config driven via `config.yaml` for non-sensitive settings, `.env` for secrets |
 | **Infra** | Dockerfile + Docker Compose |
 | **Logging** | Log rotations, storage, compresion included |
 | **Templates** | Email templates for customizing your brand |
@@ -39,16 +50,26 @@ Built around the assumption that an email is all you need for building a product
 
 - Unauthenticated endpoints don't reveal whether a user exists. This is intentional.
 - Secrets never touch `config.yaml`. If you're committing your `.env` to a production repo, that's on you.
-- OAuth and password auth share the same user model, no duplicates.
+- OAuth and password auth share the same user model, no duplicates, if no password is set, they will need to hit password_reset.
 - JWT uses an RS256 asymmetric keys, obtain the public key in JWKS format at `your_domain/auth/public-key`
-- JWT has no revocation, for this i recomend at the moment to set a low time between token refresh(PR to fix it are accepted)
+- JWT has no revocation, for this i recomend at the moment to set a `15 mins` time between token refresh(PR to fix it are accepted)
 - Your frontend needs a `reset_password_new` GET endpoint, that sends a POST to the `reset_password_new` (We don't want to leak user passwords, don't we?).
 
 
 ---
 
+## Shared User Model
 
-## Getting started
+Users can log either through the `OAuth_Login` endpoint, or through the `Pass_Login` endpoint.
+
+If the user comes first from `Pass_Signup` they will be able to use OAuth from the get go(they go through the 2FA, so the email they provide == theirs)
+
+If the user comes from the `OAuth_Login` their password will be set to blank, and always rejected by `Pass_Signup` they will need to reset their password, once reseted, they will be able to log using password also.
+
+---
+
+
+## Launching the service(The last 15 minutes)
 
 
 ```bash
@@ -59,7 +80,9 @@ docker compose up --build
 
 Configure `config.yaml` for everything else. It's commented, read it.
 
-If you want to set how often are the 2FA and the reset_password table, thats on the defines.
+Lastly set up your templates in the `Template/` folder
+
+**IN CASE OF DOUBT**: Use the defined values in the template.
 
 ### Validating Users from your service
 
@@ -90,12 +113,16 @@ Go · Gin · pgx · Docker · RS256 JWT · Google OAuth2
 ## When to use this
 
 
-You're starting a new backend, you need auth wired up fast, without debugging JWT or OAuth callback flows at 2am. Clone this, and just verify the tokens with the public key at your other services.
+You're starting a new backend, and:
+- You need auth wired up fast, without debugging JWT or OAuth callback flows at 2am.
+- Avoid regulatory risk and operational complexity.
+
+For this, is simple, clone this, and just verify the tokens with the public key at your other services.
 
 
 When **not** to use this: 
 - If you don't need user accounts, this is overkill.
-- You are at huge scales, many small decisions are made on the assumptions that you will have low user counts, this may require tuning in **MAIL** & **RATE LIMITER**
+- You are at huge scales, many small decisions are made on the assumptions that you will have medium user counts.
 - You like dolphins
 
 ## Need help?
