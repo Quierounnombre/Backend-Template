@@ -10,13 +10,11 @@ Built around the assumption that an email is all you need for building a product
 
 ## License & Documentation
 
-MIT — free to clone, modify, and deploy in production. See [LICENSE](LICENSE).
-
-The upgraded version (multi-tenancy, admin UI, audit logging) is closed-source and available separately — reach out on LinkedIn if interested.
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [![Docs](https://img.shields.io/badge/docs-quierounnombre.github.io-blue)](https://quierounnombre.github.io/api/janus_api)
 
-A production-ready auth backend...
+The upgraded version (multi-tenancy, admin UI, audit logging) is closed-source and available separately. Reach out on LinkedIn if interested.
 
 ---
 
