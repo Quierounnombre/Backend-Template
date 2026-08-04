@@ -81,6 +81,7 @@ type OAuth_settings struct {
 type Mail_settings struct {
 	Provider			string				`yaml:"provider"`
 	User				string				`yaml:"user"` //NOTE, THIS MAY NEED CHANGE WHEN USING different emails, ex: support@company and RRHH@company
+	From				string				`yaml:"from"` //WHO SENDS THE EMAIL
 	Queue_size			int					`yaml:"queue_size"`
 	Max_workers			int					`yaml:"max_workers"`
 	Min_workers			int					`yaml:"min_workers"`

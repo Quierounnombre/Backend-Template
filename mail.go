@@ -75,8 +75,7 @@ func (mr *Mail_settings)run(stop chan struct{}) {
 				slog.Error("send failed", "err", err)
 				slog.Error("dropped email", "to", m.GetHeader("To"))
 				s.Close()
-				s = nil
-			}
+				s = nil }
 		case <-stop:
 			if s != nil {
 				s.Close()
@@ -116,7 +115,7 @@ func Mail_Reset_Pass(s *Settings, db *Db_data, target string) error {
 	var err		error
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", s.Mail.User)
+	m.SetHeader("From", s.Mail.From)
 	m.SetHeader("To", target)
 	m.SetHeader("Subject", "Cambiar contraseña")
 	id, err := create_a_password_reset(db, target)
@@ -150,7 +149,7 @@ func TwoFA_Mail(s *Settings, db *Db_data, target string, id string) error {
 	var err		error
 
 	m := gomail.NewMessage()
-	m.SetHeader("From", s.Mail.User)
+	m.SetHeader("From", s.Mail.From)
 	m.SetHeader("To", target)
 	m.SetHeader("Subject", "Doble factor de autentificación")
 	str, err := TwoFAHTML(s.Frontend + "/2FA_validate/" + id)
