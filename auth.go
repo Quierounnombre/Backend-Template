@@ -253,6 +253,11 @@ func PassLogin(
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
 			return
 		}
+		if req.Password == "" {
+			slog.Info("missing password", "err", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing password"})
+			return
+		}
 		match, err = CheckUserPassword(db, req)
 		if err != nil {
 			//Log already done in check user password
