@@ -389,7 +389,6 @@ func Validate_2FA(
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		slog.Info(token.AccessToken)
 		authMiddleware.SetCookie(c, token.AccessToken)
 		authMiddleware.SetRefreshTokenCookie(c, token.RefreshToken)
 		if authMiddleware.LoginResponse != nil {
