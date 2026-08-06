@@ -36,6 +36,7 @@ func init_jwt_params(s *Settings) *g_jwt.GinJWTMiddleware {
 		CookieHTTPOnly:		s.Jwt.CookieHTTPOnly,
 		CookieMaxAge:		s.Jwt.CookieMaxAge,
 		CookieDomain:		s.Jwt.CookieDomain,
+		CookieName:			s.Jwt.CookieName,
 		SendAuthorization:	s.Jwt.SendAuthorization,
 	}
 }

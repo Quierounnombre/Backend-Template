@@ -60,6 +60,7 @@ type Jwt_settings struct {
 	TokenLookup			string				`yaml:"token_lookup"`
 	TokenHeadName		string				`yaml:"token_head_name"`
 	CookieDomain		string				`yaml:"cookie_domain"`
+	CookieName			string				`yaml:"cookie_name"`
 	SendCookie			bool				`yaml:"send_cookie"`
 	SecureCookie		bool				`yaml:"secure_cookie"`
 	SendAuthorization	bool				`yaml:"send_authorization"`
@@ -105,7 +106,7 @@ type Logger_settings struct {
 }
 
 type Password_settings struct {
-	min_entropy			float64				`yaml:"min_entropy"`
+	Min_entropy			float64				`yaml:"min_entropy"`
 }
 
 type Settings struct {

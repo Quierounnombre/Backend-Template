@@ -75,6 +75,7 @@ func Set_endpoints(
 	eng.POST("/PassLogin", PassLogin(db, handle))
 	eng.POST("/PassSignup", Pass_Singup(s, db, handle))
 	eng.POST("/2FA_validate/:id", Validate_2FA(s, db, handle))
+	eng.GET("/2FA_validate/:id", ConfirmPage())
 	eng.POST("/PassReset", ResetPass(s, db))
 	eng.POST("/Reset_pass_new/:id", ResetPassSend(s, db))
 	eng.POST("/Refresh", handle.RefreshHandler)
@@ -164,6 +165,7 @@ func Set_gin(s *Settings, db *Db_data) *gin.Engine {
 	eng.Use(gin.Recovery())
 	eng.Use(gin.Logger())
 	eng.Use(cors.New(config))
+	eng.SetHTMLTemplate(tmpls)
 	if s.Release_mode == gin.ReleaseMode {
 		eng.Use(rl.Middleware())
 	}

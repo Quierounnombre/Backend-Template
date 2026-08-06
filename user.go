@@ -296,7 +296,7 @@ func ResetPassSend(s *Settings, db *Db_data) gin.HandlerFunc {
 			c.JSON(400, gin.H{"Error:": " Error updating password"})
 			return 
 		}
-		err = validator.Validate(body.NewPass, s.Password.min_entropy)
+		err = validator.Validate(body.NewPass, s.Password.Min_entropy)
 		if err != nil {
 			slog.Info("Weak new Password", "err", err)
 			c.JSON(500, gin.H{"error": err.Error()})

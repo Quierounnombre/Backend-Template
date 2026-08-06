@@ -317,7 +317,7 @@ func Pass_Singup(
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing password"})
 			return
 		}
-		err = validator.Validate(req.Password, s.Password.min_entropy)
+		err = validator.Validate(req.Password, s.Password.Min_entropy)
 		if err != nil {
 			slog.Info("Weak Password", "err", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -364,11 +364,6 @@ func Validate_2FA(
 			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
 			return
 		}
-		if err != nil {
-			slog.Error("Error retrieving user", "err", err)
-			c.JSON(500, gin.H{"Error:": " Error in 2FA"})
-			return
-		}
 		err = Move_2FA_to_users(db, id)
 		if err != nil {
 			slog.Error("Error moving 2FA to users", "err", err)
@@ -394,11 +389,20 @@ func Validate_2FA(
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		slog.Info(token.AccessToken)
 		authMiddleware.SetCookie(c, token.AccessToken)
 		authMiddleware.SetRefreshTokenCookie(c, token.RefreshToken)
 		if authMiddleware.LoginResponse != nil {
 			authMiddleware.LoginResponse(c, token)
 		}
 		slog.Info("user registered", "user_id", user.UserID)
+	}
+}
+
+func ConfirmPage() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.HTML(http.StatusOK, "confirm.html", gin.H{
+			"Action": "/2FA_validate/" + c.Param("id"),
+		})
 	}
 }

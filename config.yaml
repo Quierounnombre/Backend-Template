@@ -46,8 +46,9 @@ jwt:
   realm: "Backend API"
   timeout: "15m"
   max_refresh: "8h"
-  token_lookup: "header: Authorization, query: token, cookie: jwt"
+  token_lookup: "header: Authorization, query: token, cookie: access_token"
   token_head_name: "Bearer"
+  cookie_name: "access_token"
   send_cookie: true
   secure_cookie: true
   cookie_same_site: 4  # 1=Default 2=Lax 3=Strict 4=None
