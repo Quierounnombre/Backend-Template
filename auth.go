@@ -186,7 +186,7 @@ func OAuthCallback(s *Settings, db *Db_data, authMiddleware *g_jwt.GinJWTMiddlew
 			c.JSON(500, gin.H{"Error creating user": err.Error()})
 			return
 		}
-		err = handleOAuthSuccess(c, authMiddleware, user, "google")
+		err = handleOAuthSuccess(c, authMiddleware, user, s.OAuth.Provider)
 		if err != nil {
 			slog.Error("oauth callback: session issuance failed", "email", storage_data.Email, "error", err)
 			c.JSON(500, gin.H{"Error authenticating user": err.Error()})
